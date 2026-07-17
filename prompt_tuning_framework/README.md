@@ -1,12 +1,17 @@
 # 🧩 Prompt Tuning Framework
 
-Framework tối ưu hóa & tinh chỉnh prompt tự động / bán tự động.
+Framework tối ưu và tinh chỉnh prompt, tự động hoặc bán tự động.
 
-Framework giữ vòng lặp chính và gọi ngược lại code của bạn (Inversion of Control) —
-bạn chỉ cắm component vào 4 điểm mở rộng.
+Bạn viết một prompt, đưa cho nó bộ dữ liệu có đáp án, rồi nó tự chạy vòng lặp:
+chấm điểm, nhặt ra các ca sai, nhờ một model mạnh viết lại prompt, rồi lặp lại.
+Cuối cùng bạn nhận prompt tốt nhất kèm bằng chứng thống kê rằng nó thật sự tốt
+hơn, chứ không phải bạn tưởng thế.
 
-> 📋 **[HOI_DAP.md](HOI_DAP.md)** — các câu hỏi thường gặp, mỗi câu kèm **lệnh
-> chạy được ngay** để tự kiểm chứng thay vì tin lời tác giả.
+Nó là framework chứ không phải công cụ, vì vòng lặp thuộc về nó chứ không thuộc
+về bạn. Bạn chỉ cắm component vào bốn điểm mở rộng và nó gọi ngược lại.
+
+> 📋 Xem thêm **[Q&A.md](Q&A.md)** — những câu hay bị hỏi, mỗi câu kèm một lệnh
+> chạy được ngay để tự kiểm chứng thay vì tin lời tác giả.
 
 ## Cài đặt
 
@@ -291,8 +296,13 @@ thay vì 200 — ít mẫu thì kết luận yếu hơn, không tránh được.
 
 ## Phương pháp đo lường được tính thế nào
 
-Toàn bộ công thức nằm ở [`core/stats.py`](core/stats.py), không phụ thuộc
-scipy/numpy — chỉ dùng `math` và `itertools` của thư viện chuẩn.
+Đo lường ở đây không phải một con số, mà là một chuỗi câu hỏi. Accuracy trả lời
+"đúng bao nhiêu phần trăm", nhưng ba câu quan trọng hơn thì nó chịu: con số này
+tin được tới đâu, hơn nhau có thật không, và rút ngắn prompt có làm hỏng không.
+Mỗi câu cần một công thức riêng.
+
+Tất cả nằm ở [`core/stats.py`](core/stats.py), chỉ dùng `math` và `itertools` của
+thư viện chuẩn, không cần scipy hay numpy.
 
 ### 1. Độ chính xác + cờ đáng tin
 
@@ -301,10 +311,14 @@ scipy/numpy — chỉ dùng `math` và `itertools` của thư viện chuẩn.
 đáng tin  = số_ca_chấm_được ≥ min_scored_ratio × tổng_số_ca      (mặc định 0.8)
 ```
 
-Ca gọi LLM lỗi bị đánh `correct=None` và **rơi khỏi mẫu số**. Đó là lý do phải có
-cờ `reliable`: 9/12 ca lỗi + 3 ca đúng = **100/100** dù prompt rất dở. Khi
-`reliable=False`, `PromptTuner` **từ chối ghi nhận điểm** và dừng, thay vì tuyên
-bố thắng lợi trên rác.
+Để ý mẫu số là số ca *chấm được*, không phải tổng số ca. Ca nào gọi LLM lỗi thì
+bị đánh `correct=None` và rơi khỏi mẫu số luôn. Nghe vô hại, nhưng nó cho ra thế
+này: 12 ca mà 9 ca lỗi mạng, 3 ca còn lại đúng hết, vậy là 3/3 = 100/100 dù prompt
+rất dở.
+
+Cờ `reliable` sinh ra để chặn đúng chỗ đó. Chấm được dưới 80% thì điểm bị đánh
+dấu không đáng tin, và `PromptTuner` từ chối ghi nhận rồi dừng, thay vì tuyên bố
+thắng lợi trên rác.
 
 ### Làm sao chắc chắn các phép đo này đúng?
 
@@ -371,10 +385,18 @@ n = b + c        k = min(b, c)
 p = 2 × Σ(i=0..k) C(n,i) / 2ⁿ
 ```
 
-Chỉ đếm **ca bất đồng** — ca cả hai cùng đúng (hoặc cùng sai) không mang thông
-tin phân biệt. Dùng bản **exact** (nhị thức) chứ không xấp xỉ chi-bình-phương, vì
-số ca bất đồng thường rất nhỏ (< 25), chỗ mà xấp xỉ sai. Ca `None` (LLM lỗi) bị
-loại cả cặp — nếu giữ, lỗi mạng sẽ bị tính thành bằng chứng hai prompt khác nhau.
+Nó chỉ đếm ca bất đồng, vì ca nào cả hai prompt cùng đúng (hoặc cùng sai) thì
+không giúp phân biệt được gì. Giống như hai học sinh làm chung một đề: câu nào cả
+hai cùng đúng thì không nói lên ai giỏi hơn.
+
+Cách hiểu công thức cho dễ: nếu hai prompt thật sự ngang nhau, mỗi ca bất đồng
+giống như tung một đồng xu. Với b = 0 và c = 57 thì p = 2/2⁵⁷, đúng bằng xác suất
+tung 57 đồng xu ra cùng một mặt. Nhân tiện, đó cũng là lý do cần ít nhất 6 ca lật
+mới đạt p < 0.05: 5 ca cho 2/2⁵ = 6.25%, còn quá dễ xảy ra do may.
+
+Dùng bản exact (nhị thức) chứ không xấp xỉ chi-bình-phương, vì số ca bất đồng
+thường rất nhỏ, dưới 25, đúng chỗ mà xấp xỉ sai. Ca `None` (LLM lỗi) bị loại cả
+cặp; giữ lại thì lỗi mạng sẽ bị tính thành bằng chứng hai prompt khác nhau.
 
 ### 4. Rút gọn prompt: non-inferiority
 
