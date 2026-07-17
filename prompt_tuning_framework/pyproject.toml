@@ -15,25 +15,44 @@ keywords = ["prompt", "prompt-tuning", "prompt-optimization", "llm", "framework"
 dependencies = [
     "pyyaml>=6.0",
     "langchain-core>=0.1",
+    # Hai provider nằm ở đây chứ không phải extras: `pip install prompt_tuning_framework/`
+    # là chạy được ngay với cả Gemini lẫn OpenAI, không cần nhớ thêm [google].
+    "langchain-google-genai>=1.0",
+    "langchain-openai>=0.1",
 ]
 
 [project.optional-dependencies]
+# google/openai giữ lại cho lệnh cũ khỏi gãy — nội dung đã nằm trong dependencies.
 google = ["langchain-google-genai>=1.0"]
 openai = ["langchain-openai>=0.1"]
-# Plugin AutoPrompt (optimizer tuỳ chọn) cần chính repo AutoPrompt trong PYTHONPATH
+# KHÔNG đưa được vào dependencies, vì hai lý do độc lập:
+#   1. `langchain<0.3` là chặn trên cứng, do upstream AutoPrompt ghim langchain==0.2.7.
+#      Thành phụ thuộc bắt buộc thì ai đang dùng langchain>=0.3 sẽ không cài nổi
+#      framework này, dù họ chẳng đụng gì tới AutoPrompt.
+#   2. Plugin còn `import utils.llm_chain` — tức cần cả repo AutoPrompt trong
+#      PYTHONPATH. pip không cấp được thứ đó, nên extras này vốn dĩ không tự đủ.
 autoprompt = ["easydict>=1.11", "langchain>=0.2,<0.3"]
+# Công cụ test không phải phụ thuộc lúc chạy -> để ngoài dependencies.
 test = ["pytest>=7.0"]
 # Đối chiếu phần thống kê với một cài đặt độc lập, được giới nghiên cứu dùng lâu
 # năm. Không phải dependency của framework — core/stats.py chỉ dùng thư viện
 # chuẩn. Chỉ cần khi muốn CHỨNG MINH phép đo đúng, xem
 # tests/test_metrics_verification.py
 verify = ["statsmodels>=0.14", "scipy>=1.10", "numpy>=1.24"]
-all = [
-    "langchain-google-genai>=1.0",
-    "langchain-openai>=0.1",
-    "easydict>=1.11",
-    "pytest>=7.0",
-]
+# Tự tham chiếu các extras khác thay vì chép tay danh sách. Bản chép tay đã từng
+# sai: nó lấy easydict của [autoprompt] mà bỏ quên langchain, nên người cài [all]
+# tưởng có AutoPrompt nhưng plugin không chạy, và không có gì báo cho họ biết.
+# Viết thế này thì thêm extras mới là [all] tự bao gồm luôn.
+#
+# [autoprompt] CỐ Ý không nằm trong đây — nó xung khắc với phần còn lại, không
+# phải chuyện quên. langchain<0.3 ép langchain-core<0.3, kéo langchain-google-genai
+# từ 4.x tụt về 1.x (đời 2024). Đo thật: pip phải dò ngược 45 phiên bản
+# langchain-core và 33 phiên bản google-genai, chạy >9 phút chưa xong. Gộp vào thì
+# [all] vừa chậm vừa âm thầm hạ cấp SDK của người không hề dùng AutoPrompt.
+# Muốn dùng plugin đó thì cài riêng, trong môi trường của repo AutoPrompt:
+#     pip install -e "prompt_tuning_framework/[autoprompt]"
+# Danh sách loại trừ này được khoá bằng test, xem tests/test_guards.py.
+all = ["prompt-tuning-framework[google,openai,test,verify]"]
 
 [project.scripts]
 prompt-tune = "prompt_tuning_framework.cli:main"

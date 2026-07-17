@@ -28,8 +28,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      # Chỉ cài extras [test]: bộ test chạy hoàn toàn offline, không cần
-      # langchain-google-genai/langchain-openai và không cần API key.
+      # [test] chỉ thêm pytest. Hai provider nằm sẵn trong dependencies gốc, nên
+      # chúng được cài ở đây — nhưng bộ test không hề gọi ra ngoài mạng và không
+      # cần API key: mọi lần gọi LLM đều bị thay bằng hàng giả.
       - name: Cài framework
         run: pip install -e "prompt_tuning_framework/[test]"
 

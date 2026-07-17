@@ -13,27 +13,53 @@ bạn chỉ cắm component vào 4 điểm mở rộng.
 Cần Python >= 3.10. Chỉ dùng framework, không cần sửa code:
 
 ```bash
-pip install "prompt-tuning-framework[google] @ git+https://github.com/tuanbuidenday/AutoPromptTuning.git#subdirectory=prompt_tuning_framework"
+pip install "prompt-tuning-framework @ git+https://github.com/tuanbuidenday/AutoPromptTuning.git#subdirectory=prompt_tuning_framework"
 ```
-
-Extras phải đứng trước dấu `@` theo PEP 508. Viết `...#subdirectory=prompt_tuning_framework[google]`
-thì pip coi `[google]` là một phần của tên thư mục và lặng lẽ bỏ qua extras.
 
 Muốn đọc/sửa code hoặc chạy test thì clone về:
 
 ```bash
 git clone https://github.com/tuanbuidenday/AutoPromptTuning.git
 cd AutoPromptTuning
-pip install -e "prompt_tuning_framework/[google]"   # Google Gemini
-pip install -e "prompt_tuning_framework/[openai]"   # OpenAI
-pip install -e "prompt_tuning_framework/[all]"      # tất cả + AutoPrompt + test
+pip install -e "prompt_tuning_framework/"
 ```
 
-Cài xong kiểm tra ngay, chưa cần API key:
+Không cần extras: bản cài trần đã có sẵn **cả Gemini lẫn OpenAI**. Cài xong kiểm
+tra ngay, chưa cần API key:
 
 ```bash
 prompt-tune plugins
 ```
+
+Extras chỉ dành cho việc thêm, không phải để chạy được:
+
+| Extras | Thêm gì | Khi nào cần |
+|---|---|---|
+| `[test]` | pytest | Chạy bộ test |
+| `[verify]` | statsmodels, scipy, numpy | Đối chiếu phần thống kê với thư viện độc lập |
+| `[all]` | `[test]` + `[verify]` | Muốn đủ đồ nghề phát triển |
+| `[autoprompt]` | easydict, langchain <0.3 | Dùng plugin optimizer AutoPrompt — **cài riêng**, xem dưới |
+
+`[autoprompt]` cố ý **không** nằm trong bản cài trần lẫn trong `[all]`, vì hai lý do:
+
+Thứ nhất, nó ghim `langchain<0.3` (theo upstream AutoPrompt, `requirements.txt`
+ghim `langchain==0.2.7`). Cái pin đó ép `langchain-core<0.3`, kéo
+`langchain-google-genai` từ 4.x tụt về 1.x — tức **âm thầm hạ cấp SDK Gemini về
+đời 2024** cho cả người không hề dùng AutoPrompt. Đo thật: gộp nó vào `[all]`
+khiến pip phải dò ngược 45 phiên bản `langchain-core` và chạy hơn 9 phút chưa
+xong; tách ra thì `[all]` cài trong **21 giây**.
+
+Thứ hai, plugin còn `import utils.llm_chain`, tức cần cả **repo AutoPrompt trong
+PYTHONPATH** — pip không cấp được, nên extras này vốn không tự đủ. Muốn dùng thì
+cài riêng, trong môi trường của repo AutoPrompt:
+
+```bash
+pip install -e "prompt_tuning_framework/[autoprompt]"
+```
+
+Nếu dùng cú pháp `pip install "tên_gói[extras] @ git+..."` thì extras phải đứng
+trước dấu `@` theo PEP 508. Viết `...#subdirectory=prompt_tuning_framework[test]`
+thì pip coi `[test]` là một phần tên thư mục và **lặng lẽ bỏ qua extras**.
 
 ## Gắn API key
 

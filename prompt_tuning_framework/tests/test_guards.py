@@ -5,6 +5,8 @@ không hề chạy (shell nuốt mất tham số), suýt bỏ lọt chỗ ghim c
 trong UI. Kiểm tra tự động thì không nói dối được.
 """
 import ast
+import importlib.metadata
+import re
 from pathlib import Path
 
 import pytest
@@ -99,3 +101,94 @@ def test_no_real_api_keys_in_source():
             if v.startswith("AQ.") and len(v) > 20:
                 pham.append(f"{path.relative_to(PKG)}:{lineno} (khoá Google?)")
     assert not pham, "Nghi có khoá API trong mã nguồn:\n  " + "\n  ".join(pham)
+
+
+# ---------- extras trong pyproject ---------------------------------------
+# Đọc metadata của bản ĐÃ CÀI, không đọc chữ trong pyproject.toml: cái người
+# dùng thật sự nhận được là metadata, và tomllib chỉ có từ Python 3.11 trong khi
+# framework này đỡ tới 3.10.
+DIST = "prompt-tuning-framework"
+
+
+def _extras():
+    md = importlib.metadata.metadata(DIST)
+    return set(md.get_all("Provides-Extra") or [])
+
+
+def _requires_for(extra: str):
+    out = []
+    for req in importlib.metadata.requires(DIST) or []:
+        if f'extra == "{extra}"' in req or f"extra == '{extra}'" in req:
+            out.append(req.split(";")[0].strip())
+    return out
+
+
+# [autoprompt] đứng ngoài [all] là CỐ Ý, không phải quên: langchain<0.3 của nó
+# kéo langchain-google-genai từ 4.x tụt về 1.x và làm pip dò ngược hàng chục
+# phiên bản. Lý do đầy đủ nằm trong pyproject.toml.
+NGOAI_ALL = {"autoprompt"}
+
+
+def test_all_extra_covers_every_other_extra():
+    """[all] phải bao mọi extras khác, trừ danh sách loại trừ đã ghi rõ lý do.
+
+    Bản chép tay đã từng sai: nó lấy easydict của [autoprompt] nhưng bỏ quên
+    langchain, nên `pip install [all]` báo thành công trong khi plugin AutoPrompt
+    không chạy được — không có lỗi, không có cảnh báo, chỉ là một test bị skip
+    lặng lẽ. Nay [all] tự tham chiếu các extras kia, và test này canh cho nó luôn
+    tham chiếu ĐỦ: thêm extras mới mà quên [all] là đỏ ngay.
+    """
+    khac = _extras() - {"all"} - NGOAI_ALL
+    assert khac, "Không đọc được extras — gói đã cài chưa?"
+
+    goi = _requires_for("all")
+    assert len(goi) == 1, f"[all] nên tự tham chiếu bằng 1 dòng, đang là: {goi}"
+
+    m = re.search(r"\[([^\]]+)\]", goi[0])
+    assert m, f"[all] không tham chiếu extras nào: {goi[0]!r}"
+    duoc_bao = {x.strip() for x in m.group(1).split(",")}
+
+    thieu = khac - duoc_bao
+    assert not thieu, (
+        f"[all] bỏ sót extras: {sorted(thieu)}. "
+        f"Sửa pyproject.toml: all = [\"{DIST}[{','.join(sorted(khac))}]\"]"
+    )
+
+    thua = duoc_bao & NGOAI_ALL
+    assert not thua, (
+        f"[all] kéo theo {sorted(thua)} — extras này xung khắc với phần còn lại "
+        f"và sẽ hạ cấp provider. Xem lý do trong pyproject.toml."
+    )
+
+
+def test_autoprompt_extra_is_the_only_thing_pinning_old_langchain():
+    """Cái pin langchain<0.3 chỉ được phép nằm trong [autoprompt].
+
+    Nó đến từ upstream AutoPrompt (requirements.txt ghim langchain==0.2.7). Lọt
+    sang dependencies gốc hay sang extras khác là kéo cả môi trường về đời 2024,
+    và người dùng langchain>=0.3 sẽ không cài nổi framework này.
+    """
+    for req in importlib.metadata.requires(DIST) or []:
+        if not re.match(r"^langchain\b(?!-)", req):
+            continue
+        if "<0.3" in req or "<0,3" in req:
+            assert 'extra == "autoprompt"' in req, (
+                f"Pin langchain cũ lọt ra ngoài [autoprompt]: {req!r}"
+            )
+
+
+def test_two_providers_are_installed_without_any_extra():
+    """Cài trần (không extras) phải dùng được ngay cả Gemini lẫn OpenAI.
+
+    Nếu ai đó đẩy hai provider ngược về extras, `pip install prompt_tuning_framework/`
+    vẫn báo thành công nhưng sập lúc gọi model — sai lệch chỉ lộ ra khi tốn tiền
+    gọi API thật. Đây là chốt chặn cho điều đó.
+    """
+    goc = [r.split(";")[0].strip() for r in (importlib.metadata.requires(DIST) or [])
+           if "extra ==" not in r]
+    ten = {re.split(r"[<>=!\[ ]", r, 1)[0].lower() for r in goc}
+    for phai_co in ("langchain-google-genai", "langchain-openai"):
+        assert phai_co in ten, (
+            f"{phai_co} không nằm trong dependencies bắt buộc — cài trần sẽ "
+            f"không gọi được model. Đang có: {sorted(ten)}"
+        )
