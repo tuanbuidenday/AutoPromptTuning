@@ -1,0 +1,54 @@
+name: CD — Release
+
+# Phát hành khi gắn tag, ví dụ:  git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build và phát hành
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Không phát hành thứ chưa chạy qua test.
+      - name: Cài và chạy test
+        run: |
+          pip install -e "prompt_tuning_framework/[test]"
+          pytest prompt_tuning_framework/tests/ -q
+
+      - name: Build sdist + wheel
+        run: |
+          pip install build twine
+          python -m build prompt_tuning_framework/
+          twine check prompt_tuning_framework/dist/*
+
+      # Tag phải khớp version trong pyproject, nếu không sẽ phát hành nhầm bản.
+      - name: Đối chiếu tag với version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('prompt_tuning_framework/pyproject.toml').read_text())['project']['version'])")
+          echo "tag=$TAG  pyproject=$VER"
+          if [ "$TAG" != "$VER" ]; then
+            echo "::error::Tag ($TAG) không khớp version trong pyproject ($VER)."
+            exit 1
+          fi
+
+      - name: Tạo GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: prompt_tuning_framework/dist/*
+          generate_release_notes: true
+
+# Ghi chú: cố tình KHÔNG tự đẩy lên PyPI. Đẩy lên PyPI là công bố công khai
+# không thu hồi được (tên package bị chiếm vĩnh viễn) và cần token riêng.
+# Nếu muốn, thêm job dùng pypa/gh-action-pypi-publish với Trusted Publishing.

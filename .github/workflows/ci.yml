@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # Chỉ cài extras [test]: bộ test chạy hoàn toàn offline, không cần
+      # langchain-google-genai/langchain-openai và không cần API key.
+      - name: Cài framework
+        run: pip install -e "prompt_tuning_framework/[test]"
+
+      - name: Chạy test
+        run: pytest prompt_tuning_framework/tests/ -q
+
+  secrets-scan:
+    name: Quét lộ khoá
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Khoá thật không bao giờ được nằm trong git. config/llm_env.yml là
+      # template của upstream nên phải giữ giá trị rỗng; khoá thật đi vào
+      # config/llm_env.local.yml (đã gitignore).
+      - name: config/llm_env.local.yml không được commit
+        run: |
+          if git ls-files --error-unmatch config/llm_env.local.yml 2>/dev/null; then
+            echo "::error::config/llm_env.local.yml bị commit — file này chứa khoá thật."
+            exit 1
+          fi
+          echo "OK: llm_env.local.yml không nằm trong git."
+
+      - name: Không có khoá thật trong file đã commit
+        run: |
+          # Tự kiểm chứng regex trước khi tin kết quả "sạch": nếu regex hỏng thì
+          # bước này phải đỏ, chứ không được im lặng báo sạch.
+          printf 'sk-proj-%s\n' "$(head -c 24 /dev/zero | tr '\0' 'a')" > /tmp/canary.txt
+          if ! grep -rEl "sk-proj-[A-Za-z0-9_-]{20}|sk-[A-Za-z0-9]{40}|AIza[A-Za-z0-9_-]{30}" /tmp/canary.txt >/dev/null; then
+            echo "::error::Self-check thất bại: regex không bắt được khoá mồi. Kết quả 'sạch' không đáng tin."
+            exit 1
+          fi
+
+          if git grep -nEI "sk-proj-[A-Za-z0-9_-]{20}|sk-[A-Za-z0-9]{40}|AIza[A-Za-z0-9_-]{30}" -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::Phát hiện khoá API trong file đã commit."
+            exit 1
+          fi
+          echo "OK: không có khoá API trong repo."
+
+  package:
+    name: Đóng gói được
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install build twine
+
+      - name: Build sdist + wheel
+        run: python -m build prompt_tuning_framework/
+
+      - name: Kiểm tra metadata
+        run: twine check prompt_tuning_framework/dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: prompt_tuning_framework/dist/*
