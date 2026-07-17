@@ -4,16 +4,18 @@
 nhất. Sửa prompt rồi thấy điểm cao hơn thì ai cũng tin là mình giỏi lên. Nhưng
 "thấy cao hơn" và "thật sự tốt hơn" là hai chuyện khác nhau.
 
-Trước hết, vài từ sẽ gặp suốt tài liệu này:
+Trước hết, vài thuật ngữ sẽ gặp suốt tài liệu này:
 
-| Từ | Nghĩa |
+| Thuật ngữ | Nghĩa |
 |---|---|
-| **Ca** | Một dòng dữ liệu, gồm một đoạn văn bản và đáp án đúng của nó |
-| **Ca lật** | Ca mà prompt cũ trả lời sai còn prompt mới trả lời đúng (hoặc ngược lại) |
-| **Điểm trần** | Điểm kịch khung, tức 100/100 — không thể cao hơn được nữa |
-| **Luật lười** | Một mẹo đoán tắt, kiểu "thấy chữ URGENT thì trả lời Yes" |
-| **Tập train** | Phần dữ liệu cho optimizer xem để nó sửa prompt |
-| **Tập test** | Phần dữ liệu giữ riêng, optimizer không bao giờ được nhìn |
+| **sample** | Một dòng dữ liệu, gồm một đoạn văn bản và đáp án đúng của nó |
+| **flip** | Sample mà prompt cũ trả lời sai còn prompt mới trả lời đúng (hoặc ngược lại) |
+| **ceiling score** | Điểm kịch khung, tức 100/100 — không thể cao hơn được nữa |
+| **shortcut rule** | Một mẹo đoán tắt, kiểu "thấy chữ URGENT thì trả lời Yes" |
+| **train set** | Phần dữ liệu cho optimizer xem để nó sửa prompt |
+| **test set** | Phần dữ liệu giữ riêng, optimizer không bao giờ được nhìn |
+| **discordant pair** | Sample mà hai prompt trả lời khác nhau — chỉ những sample này mới mang thông tin phân biệt |
+| **coverage** | Tỉ lệ khoảng tin cậy "trúng" giá trị thật; khoảng 95% thì phải trúng ~95% số lần |
 
 Toàn bộ công thức nằm ở [`core/stats.py`](core/stats.py). Nó chỉ dùng `math` và
 `itertools` của thư viện chuẩn Python, không cần scipy hay numpy.
@@ -36,23 +38,24 @@ Mỗi câu cần một công thức khác nhau. Đó là lý do có file này.
 ## 1. Điểm số, và cái bẫy nằm ở mẫu số
 
 ```
-điểm      = số_ca_đúng / số_ca_CHẤM_ĐƯỢC × 100
-đáng tin  = số_ca_chấm_được ≥ min_scored_ratio × tổng_số_ca      (mặc định 0.8)
+score     = num_correct / num_SCORED * 100
+reliable  = num_scored >= min_scored_ratio * num_samples      (mặc định 0.8)
 ```
 
-Để ý mẫu số là số ca *chấm được*, không phải tổng số ca. Ca nào gọi LLM bị lỗi
-(mạng hỏng, quá hạn ngạch) thì không có kết quả, nên nó rơi khỏi mẫu số.
+Để ý mẫu số là `num_scored`, tức số sample *chấm được*, không phải tổng số
+sample. Sample nào gọi LLM bị lỗi (mạng hỏng, quá hạn ngạch) thì không có kết
+quả, nên nó rơi khỏi mẫu số.
 
-Nghe thì vô hại, nhưng nó tạo ra thế này: bạn có 12 ca, 9 ca lỗi mạng, 3 ca còn
-lại tình cờ đúng hết. Vậy là 3/3 = **100/100**, dù prompt rất dở. Con số đẹp,
-hoàn toàn giả, và không có gì báo cho bạn biết.
+Nghe thì vô hại, nhưng nó tạo ra thế này: bạn có 12 sample, 9 sample lỗi mạng, 3
+sample còn lại tình cờ đúng hết. Vậy là 3/3 = **100/100**, dù prompt rất dở. Con
+số đẹp, hoàn toàn giả, và không có gì báo cho bạn biết.
 
-Cờ `reliable` sinh ra để chặn đúng chỗ đó. Chấm được dưới 80% số ca thì điểm bị
-đánh dấu là không đáng tin, và `PromptTuner` từ chối ghi nhận rồi dừng lại, thay
-vì tuyên bố thắng lợi trên đống rác.
+Cờ `reliable` sinh ra để chặn đúng chỗ đó. Chấm được dưới 80% số sample thì điểm
+bị đánh dấu là không đáng tin, và `PromptTuner` từ chối ghi nhận rồi dừng lại,
+thay vì tuyên bố thắng lợi trên đống rác.
 
 > Đây không phải lỗi tưởng tượng. AutoPrompt gốc dính đúng bug này:
-> `eval/evaluator.py` lọc bỏ các ca `'Discarded'` **trước khi** tính trung bình.
+> `eval/evaluator.py` lọc bỏ các sample `'Discarded'` **trước khi** tính trung bình.
 
 ---
 
@@ -67,12 +70,14 @@ Nếm 200 quả đều ngọt thì mới dám nói "ít nhất 98%".
 Đó chính xác là điều Wilson làm: nó biến **một con số** thành **một khoảng**.
 
 ```
-tâm        = (x + z²/2) / (n + z²)
-nửa_rộng   = z/(n + z²) × √( x(n−x)/n + z²/4 )
-CI         = [tâm − nửa_rộng,  tâm + nửa_rộng]        x = số đúng, n = số chấm được
+center     = (x + z²/2) / (n + z²)
+half_width = z/(n + z²) * sqrt( x(n−x)/n + z²/4 )
+CI         = [center − half_width, center + half_width]
+
+x = num_correct, n = num_scored, z = 1.96 cho mức 95%
 ```
 
-Cùng là điểm trần 100/100, nhưng ý nghĩa khác hẳn nhau tuỳ số mẫu:
+Cùng là ceiling score 100/100, nhưng ý nghĩa khác hẳn nhau tuỳ số sample:
 
 | Đúng | Điểm | Thực ra chỉ chứng minh được |
 |---|---|---|
@@ -80,12 +85,12 @@ Cùng là điểm trần 100/100, nhưng ý nghĩa khác hẳn nhau tuỳ số m
 | 60/60 | 100 | ≥ 94.0% |
 | 200/200 | 100 | ≥ 98.1% |
 
-Nói cách khác, "100 điểm" tự nó vô nghĩa nếu không kèm số mẫu.
+Nói cách khác, "100 điểm" tự nó vô nghĩa nếu không kèm số sample.
 
 ### Vì sao Wilson chứ không phải công thức trong sách
 
 Công thức phổ biến trong sách giáo khoa tên là Wald: `p ± z√(p(1−p)/n)`. Nó vỡ ở
-rìa. Với 16/16 ca đúng thì `p = 1`, nên `√(1 × 0 / 16) = 0`, và khoảng thu về là
+rìa. Với 16/16 sample đúng thì `p = 1`, nên `√(1 × 0 / 16) = 0`, và khoảng thu về là
 `[100, 100]` — tức "chắc chắn tuyệt đối, không bao giờ sai", suy ra từ vỏn vẹn 16
 mẫu. Vô lý. Wilson sinh ra để sửa đúng chỗ đó.
 
@@ -118,22 +123,22 @@ Tưởng tượng hai học sinh cùng làm một đề 200 câu. Muốn biết 
 - Câu nào cả hai cùng sai thì cũng vậy
 - Chỉ câu nào một người đúng một người sai mới nói lên điều gì
 
-Những câu đó gọi là **ca bất đồng**. McNemar chỉ nhìn vào chúng và bỏ qua phần
+Những câu đó gọi là **discordant pair**. McNemar chỉ nhìn vào chúng và bỏ qua phần
 còn lại.
 
 ```
-b = số ca A đúng / B sai        c = số ca A sai / B đúng
-n = b + c        k = min(b, c)
-p = 2 × Σ(i=0..k) C(n,i) / 2ⁿ
+b = num_samples(A correct, B wrong)     c = num_samples(A wrong, B correct)
+n = b + c                               k = min(b, c)
+p = 2 * Σ(i=0..k) C(n,i) / 2ⁿ
 ```
 
 ### Nó chính là tung đồng xu
 
-Nếu hai prompt thật sự ngang nhau, thì mỗi ca bất đồng giống hệt việc tung một
+Nếu hai prompt thật sự ngang nhau, thì mỗi discordant pair giống hệt việc tung một
 đồng xu: 50/50 nghiêng về bên nào.
 
-Kết quả thật của framework: **57 ca bất đồng, và cả 57 đều nghiêng về prompt
-mới**. Không ca nào xấu đi. Xác suất tung 57 đồng xu ra cùng một mặt là:
+Kết quả thật của framework: **57 discordant pair, và cả 57 đều nghiêng về prompt
+mới**. Không sample nào xấu đi. Xác suất tung 57 đồng xu ra cùng một mặt là:
 
 ```
 2 / 2⁵⁷ = 0,0000000000000000139
@@ -149,9 +154,9 @@ mcnemar_exact(0, 57)   # 1.3877787807814457e-17
 Cách đọc: *"Nếu prompt mới không hề tốt hơn, thì để thấy kết quả này bạn phải tung
 57 đồng xu ra cùng một mặt."* Nên ta kết luận nó thật sự tốt hơn.
 
-### Vì sao cần ít nhất 6 ca lật
+### Vì sao cần ít nhất 6 flip
 
-| Số ca lật | Xác suất xảy ra do may | Đủ chưa |
+| Số flip | Xác suất xảy ra do may | Đủ chưa |
 |---|---|---|
 | 5 | 2/2⁵ = 6,25% | chưa — quá dễ xảy ra |
 | 6 | 2/2⁶ = 3,13% | được, dưới ngưỡng 5% |
@@ -164,16 +169,16 @@ min_flips_for_significance(0.05)   # 6
 ```
 
 Đây cũng là lý do con số cũ trong slide không dùng được: 16 mẫu, 68.8 → 100 nghĩa
-là 11 ca đúng thành 16 ca đúng, tức chỉ **5 ca lật**, cho p = 0.0625. Chưa đủ.
+là 11 sample đúng thành 16 sample đúng, tức chỉ **5 flip**, cho p = 0.0625. Chưa đủ.
 
 ### Vì sao không so hai khoảng tin cậy cho nhanh
 
-Vì hai prompt chạy trên **cùng một bộ mẫu**, không phải hai nhóm khác nhau. So
+Vì hai prompt chạy trên **cùng một dataset**, không phải hai nhóm khác nhau. So
 hai khoảng rời nhau là coi chúng như hai thí nghiệm độc lập, tức vứt bỏ thông tin
 ghép cặp và trở nên kém nhạy hẳn.
 
 Vài chi tiết cài đặt: dùng bản exact (nhị thức) chứ không xấp xỉ chi-bình-phương,
-vì số ca bất đồng thường dưới 25, đúng chỗ mà xấp xỉ sai. Ca lỗi LLM (`None`) bị
+vì số discordant pair thường dưới 25, đúng chỗ mà xấp xỉ sai. Sample lỗi LLM (`None`) bị
 loại cả cặp; giữ lại thì lỗi mạng sẽ bị tính thành bằng chứng hai prompt khác
 nhau.
 
@@ -185,11 +190,11 @@ nhau.
 mà là "nó có **tệ đi** không".
 
 ```
-chấp nhận  ⟺  CI_dưới(prompt_mới) ≥ accuracy(prompt_gốc) − margin
+accept  ⟺  CI_lower(new_prompt) >= accuracy(base_prompt) − margin
 ```
 
 Cạm bẫy lớn nhất ở đây: **không được suy `p > 0.05` là "hai prompt bằng nhau"**.
-Không bác bỏ được giả thuyết không có nghĩa giả thuyết đó đúng. Với bộ mẫu nhỏ
+Không bác bỏ được giả thuyết không có nghĩa giả thuyết đó đúng. Với dataset nhỏ
 thì p *luôn* lớn hơn 0.05, nên lập luận đó sẽ **luôn** kết luận "không đổi", kể
 cả khi prompt mới tệ đi thật.
 
@@ -211,8 +216,8 @@ non_inferiority(base_correct=180, new_correct=180, num_total=200, margin_pp=5.0)
 ## 5. Vừa đúng vừa ngắn
 
 ```
-vượt   = max(0, (số_từ − word_budget) / word_budget)
-điểm   = accuracy − brevity_weight × vượt
+excess = max(0, (num_words − word_budget) / word_budget)
+score  = accuracy − brevity_weight * excess
 ```
 
 ```python
@@ -231,9 +236,9 @@ nên số token của model A không so được với model B.
 ## 6. Đa model: lấy min, không lấy trung bình
 
 ```
-điểm       = min( accuracy của từng model )        ← KHÔNG phải trung bình
-chênh_lệch = max − min
-mẫu số CI  = số MẪU, không phải số_model × số_mẫu
+score            = min( accuracy của từng model )      <- KHÔNG phải mean
+spread           = max − min
+CI denominator   = num_samples, KHÔNG phải num_models * num_samples
 ```
 
 ```python
@@ -243,14 +248,14 @@ executor = MultiModelExecutor(models=[
     {"provider": "google", "model": "gemini-3.1-flash-lite"},
     {"provider": "openai", "model": "gpt-4o-mini"},
 ], labels=LABELS)
-evaluator = CrossModelEvaluator()      # điểm = accuracy của model YẾU NHẤT
+evaluator = CrossModelEvaluator()      # score = accuracy của model YẾU NHẤT
 ```
 
 Lấy min vì trung bình cho phép model giỏi che model dở. Prompt đạt 100 trên model
 A và 60 trên model B có trung bình 80, nghe thì ổn, nhưng đó không phải prompt
 dùng chung được. Lấy min thì buộc phải sửa cho model yếu nhất.
 
-Mẫu số của khoảng tin cậy không cộng dồn model vào, vì đó là **cùng một bộ mẫu đo
+Mẫu số của khoảng tin cậy không cộng dồn model vào, vì đó là **cùng một dataset đo
 lặp lại** chứ không phải quan sát độc lập. Cộng dồn sẽ làm khoảng hẹp đi một cách
 giả tạo.
 
@@ -258,11 +263,11 @@ giả tạo.
 
 ---
 
-## 7. Tách tập test — nếu không thì mọi con số đều vô nghĩa
+## 7. Tách test set — nếu không thì mọi con số đều vô nghĩa
 
-Optimizer được xem các ca **sai** để viết lại prompt. Nếu rồi lại chấm điểm trên
-chính những ca đó, thì prompt chỉ đang vá thuộc lòng, và 100/100 thu được là điểm
-học thuộc, không nói lên gì về ca mới.
+Optimizer được xem các sample **sai** để viết lại prompt. Nếu rồi lại chấm điểm trên
+chính những sample đó, thì prompt chỉ đang vá thuộc lòng, và 100/100 thu được là điểm
+học thuộc, không nói lên gì về sample mới.
 
 ```python
 from prompt_tuning_framework import split_samples
@@ -281,22 +286,22 @@ print(best.metadata["test_ci_low"], best.metadata["test_ci_high"])
 
 ---
 
-## 8. Bộ mẫu phải khiến mọi luật lười thất bại
+## 8. Dataset phải khiến mọi shortcut rule thất bại
 
 Một benchmark chỉ có giá trị khi không thể ăn gian. Nếu model đoán tắt mà vẫn
 được điểm cao thì bạn đang đo mẹo đoán, không đo hiểu biết.
 
 ### Bài ticket (tiếng Anh)
 
-[`examples/tickets.csv`](examples/tickets.csv): 480 ca, cân bằng 240 Yes / 240 No,
+[`examples/tickets.csv`](examples/tickets.csv): 480 sample, cân bằng 240 Yes / 240 No,
 chia 280 train / 200 test. Sinh bởi `examples/make_tickets.py` với seed cố định
 nên tái tạo được.
 
-Quy định ẩn: **Yes khi khách đang trả tiền VÀ bị chặn hoàn toàn.** Bộ mẫu thiết
+Quy định ẩn: **Yes khi khách đang trả tiền VÀ bị chặn hoàn toàn.** Dataset thiết
 kế theo kiểu giai thừa, tức là ghép đủ mọi tổ hợp của ba yếu tố *giọng điệu × trả
 tiền × bị chặn*, nên không dấu hiệu đơn lẻ nào đủ:
 
-| Luật lười | Điểm đạt được |
+| Shortcut rule | Điểm đạt được |
 |---|---|
 | "gào URGENT!!! thì Yes" (giọng điệu) | 50.0 — vô dụng, bằng tung đồng xu |
 | "bình tĩnh thì Yes" (giọng điệu) | 50.0 — vô dụng |
@@ -306,21 +311,21 @@ tiền × bị chặn*, nên không dấu hiệu đơn lẻ nào đủ:
 
 Ticket gào to rải đều cả hai nhãn, `P(Yes | gào to) = 50.0%`. Chỗ này quan trọng:
 nếu chỉ ticket No mới gào to thì model chỉ cần học "gào to thì No" là xong, và
-benchmark đang đo **giọng điệu** thay vì đo quy định. Bộ mẫu đầu tiên hỏng đúng
+benchmark đang đo **giọng điệu** thay vì đo quy định. Dataset đầu tiên hỏng đúng
 như vậy — 15/15 ticket gào to đều là No.
 
 ### Bài PII (tiếng Việt)
 
-[`examples/pii.csv`](examples/pii.csv): 120 ca, 60 Yes / 60 No, chia 60/60.
+[`examples/pii.csv`](examples/pii.csv): 120 sample, 60 Yes / 60 No, chia 60/60.
 
 Quy định ẩn: **Yes khi văn bản chứa định danh cá nhân của khách** (số điện thoại,
 email cá nhân, CCCD, số thẻ, địa chỉ nhà).
 
-Prompt khởi đầu của bài này có sẵn chữ "nhạy cảm", nên bộ mẫu bắt buộc phải rải
+Prompt khởi đầu của bài này có sẵn chữ "nhạy cảm", nên dataset bắt buộc phải rải
 chữ đó đều 50/50 giữa hai nhãn. Không làm vậy thì model chỉ cần học "thấy chữ
 nhạy cảm thì Yes", và ta đang đo từ khoá chứ không đo việc có lộ dữ liệu:
 
-| Luật lười | Điểm |
+| Shortcut rule | Điểm |
 |---|---|
 | "có chữ nhạy cảm thì Yes" | 50.0 |
 | "có chữ khách thì Yes" | 50.0 |
@@ -332,15 +337,15 @@ hàng dài (có số nhưng không phải định danh); hotline/email công ty;
 kèm nội dung thường.
 
 `tests/test_dataset.py` và `tests/test_pii_dataset.py` canh giữ toàn bộ các tính
-chất này. Chúng đã bắt được lỗi thật: bản đầu của generator PII sinh 120 ca nhưng
-chỉ 111 ca duy nhất, khiến 6 văn bản nằm ở cả train lẫn test.
+chất này. Chúng đã bắt được lỗi thật: bản đầu của generator PII sinh 120 sample nhưng
+chỉ 111 sample duy nhất, khiến 6 văn bản nằm ở cả train lẫn test.
 
-### Vì sao tập test là 200 ca
+### Vì sao test set là 200 sample
 
 Không phải con số tuỳ tiện. Đó là cỡ nhỏ nhất đủ để kết luận "rút ngắn prompt mà
 accuracy không tụt quá 5 điểm":
 
-| Cỡ tập test | Khoảng tin cậy (ở 90%) | Kết luận non-inferiority 5đ? |
+| Cỡ test set | Khoảng tin cậy (ở 90%) | Kết luận non-inferiority 5đ? |
 |---|---|---|
 | 16 | ±16.3 | chưa đủ |
 | 48 | ±8.8 | chưa đủ |
@@ -351,14 +356,14 @@ accuracy không tụt quá 5 điểm":
 
 | File | Nội dung |
 |---|---|
-| [`examples/tickets.csv`](examples/tickets.csv) | cả 480 ca, chưa chia |
-| [`examples/tickets_train.csv`](examples/tickets_train.csv) | 280 ca — optimizer được xem |
-| [`examples/tickets_test.csv`](examples/tickets_test.csv) | 200 ca — giữ riêng, optimizer không bao giờ thấy |
+| [`examples/tickets.csv`](examples/tickets.csv) | cả 480 sample, chưa chia |
+| [`examples/tickets_train.csv`](examples/tickets_train.csv) | 280 sample — optimizer được xem |
+| [`examples/tickets_test.csv`](examples/tickets_test.csv) | 200 sample — giữ riêng, optimizer không bao giờ thấy |
 
 Code lúc chạy vẫn gọi `split_samples` chứ không đọc hai file đã chia; chúng chỉ để
 người đọc kiểm tra. `tests/test_dataset.py` canh cho chúng luôn khớp chính xác thứ
-`split_samples` sinh ra. Nếu không, khi bộ mẫu đổi mà quên sinh lại, chúng sẽ âm
-thầm thành **dữ liệu ma**: mở ra đọc được, trông đúng, nhưng không phải tập test
+`split_samples` sinh ra. Nếu không, khi dataset đổi mà quên sinh lại, chúng sẽ âm
+thầm thành **dữ liệu ma**: mở ra đọc được, trông đúng, nhưng không phải test set
 thật đã tạo ra con số trong báo cáo.
 
 Sinh lại: `python -m prompt_tuning_framework.examples.make_tickets`
