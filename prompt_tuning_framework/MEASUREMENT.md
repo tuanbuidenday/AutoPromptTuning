@@ -61,9 +61,9 @@ thay vì tuyên bố thắng lợi trên đống rác.
 
 ## 2. Wilson: một con số không nói lên độ tin cậy
 
-Hãy tưởng tượng bạn nếm cam trong vườn. Nếm 16 quả, cả 16 đều ngọt. Bạn dám
-tuyên bố "cả vườn đều ngọt" không? Không — 16 quả là quá ít, có thể bạn nếm trúng
-góc ngọt. Bạn chỉ dám nói "ít nhất khoảng 81% số cam là ngọt".
+Hãy tưởng tượng bạn nếm cam trong vườn. Nếm 16 quả, cả 16 đều ngọt. Mười sáu quả
+vẫn là quá ít để tuyên bố "cả vườn đều ngọt" — biết đâu bạn nếm trúng góc ngọt.
+Bạn chỉ dám nói "ít nhất khoảng 81% số cam là ngọt".
 
 Nếm 200 quả đều ngọt thì mới dám nói "ít nhất 98%".
 
@@ -152,7 +152,7 @@ mcnemar_exact(0, 57)   # 1.3877787807814457e-17
 ```
 
 Cách đọc: *"Nếu prompt mới không hề tốt hơn, thì để thấy kết quả này bạn phải tung
-57 đồng xu ra cùng một mặt."* Nên ta kết luận nó thật sự tốt hơn.
+57 đồng xu ra cùng một mặt."* Nên tôi kết luận nó thật sự tốt hơn.
 
 ### Vì sao cần ít nhất 6 flip
 
@@ -281,7 +281,7 @@ print(best.metadata["test_ci_low"], best.metadata["test_ci_high"])
 
 Điểm dev cao hơn điểm test quá 10 điểm thì framework tự log cảnh báo `HỌC THUỘC`.
 
-Đây không phải lo xa. Một lần chạy trên bộ nhỏ cho train 83.3 nhưng test chỉ
+Đây không phải lo xa. Một lần chạy trên dataset nhỏ cho train 83.3 nhưng test chỉ
 66.7. Nếu không tách tập, con số báo cáo đã cao hơn sự thật 16.6 điểm.
 
 ---
@@ -323,7 +323,7 @@ email cá nhân, CCCD, số thẻ, địa chỉ nhà).
 
 Prompt khởi đầu của bài này có sẵn chữ "nhạy cảm", nên dataset bắt buộc phải rải
 chữ đó đều 50/50 giữa hai nhãn. Không làm vậy thì model chỉ cần học "thấy chữ
-nhạy cảm thì Yes", và ta đang đo từ khoá chứ không đo việc có lộ dữ liệu:
+nhạy cảm thì Yes", và tôi đang đo từ khoá chứ không đo việc có lộ dữ liệu:
 
 | Shortcut rule | Điểm |
 |---|---|
@@ -372,9 +372,9 @@ Sinh lại: `python -m prompt_tuning_framework.examples.make_tickets`
 
 ## 9. Làm sao chắc chắn chính các phép đo này đúng
 
-Đừng tin. Phần thống kê do chính tác giả framework tự viết, mà tự kiểm chứng công
-thức bằng chính công thức đó thì vô giá trị — hiểu sai từ đầu thì cả hai lần đều
-sai giống hệt nhau.
+Đừng tin. Phần thống kê do chính tôi viết, mà tự kiểm chứng công thức bằng chính
+công thức đó thì vô giá trị — hiểu sai từ đầu thì cả hai lần đều sai giống hệt
+nhau.
 
 [`tests/test_metrics_verification.py`](tests/test_metrics_verification.py) kiểm
 chứng bằng ba tầng độc lập, và CI chạy lại mỗi lần push:

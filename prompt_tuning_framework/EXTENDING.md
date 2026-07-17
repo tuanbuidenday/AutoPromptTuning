@@ -1,7 +1,7 @@
 # Mở rộng framework
 
-File này dành cho người muốn cắm component của mình vào, hoặc muốn hiểu bên trong
-framework chạy thế nào. Chỉ dùng framework thì không cần đọc — xem
+File này dành cho bạn nếu bạn muốn cắm component của mình vào, hoặc muốn hiểu bên
+trong framework chạy thế nào. Chỉ dùng framework thì không cần đọc — xem
 [README](README.md) là đủ.
 
 ---
@@ -138,5 +138,5 @@ pip install -e "prompt_tuning_framework/[autoprompt]"
 
 Lưu ý là `[autoprompt]` ghim `langchain<0.3` (theo `requirements.txt` của
 upstream, ghim `langchain==0.2.7`). Cái pin đó kéo `langchain-google-genai` từ
-4.x tụt về 1.x, tức hạ cấp SDK Gemini về đời 2024. Đó là lý do nó không nằm trong
-bản cài trần lẫn trong `[all]`.
+4.x tụt về 1.x, tức hạ cấp SDK Gemini về đời 2024. Đó là lý do tôi để nó nằm
+ngoài base install lẫn ngoài `[all]`.
