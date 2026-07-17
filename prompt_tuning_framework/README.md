@@ -192,6 +192,85 @@ Chi phí: ~1.300 VND một lần chạy đầy đủ. Rẻ nhờ tách vai execu
 executor chạy 1.320 lượt nhưng dùng model rẻ và chỉ trả một từ, còn optimizer đắt
 gấp 6 lần trên mỗi token thì chỉ gọi 3 lượt.
 
+## Phương pháp đo lường được tính thế nào
+
+Toàn bộ công thức nằm ở [`core/stats.py`](core/stats.py), không phụ thuộc
+scipy/numpy — chỉ dùng `math` và `itertools` của thư viện chuẩn.
+
+### 1. Độ chính xác + cờ đáng tin
+
+```
+điểm      = số_ca_đúng / số_ca_CHẤM_ĐƯỢC × 100
+đáng tin  = số_ca_chấm_được ≥ min_scored_ratio × tổng_số_ca      (mặc định 0.8)
+```
+
+Ca gọi LLM lỗi bị đánh `correct=None` và **rơi khỏi mẫu số**. Đó là lý do phải có
+cờ `reliable`: 9/12 ca lỗi + 3 ca đúng = **100/100** dù prompt rất dở. Khi
+`reliable=False`, `PromptTuner` **từ chối ghi nhận điểm** và dừng, thay vì tuyên
+bố thắng lợi trên rác.
+
+### 2. Khoảng tin cậy Wilson (95%, z = 1.96)
+
+```
+tâm        = (x + z²/2) / (n + z²)
+nửa_rộng   = z/(n + z²) × √( x(n−x)/n + z²/4 )
+CI         = [tâm − nửa_rộng,  tâm + nửa_rộng]        x = số đúng, n = số chấm được
+```
+
+Dùng Wilson **thay vì Wald** (`p ± z√(p(1−p)/n)`) vì Wald vỡ ở rìa: với 16/16 ca
+đúng, Wald cho `[100, 100]` — tuyên bố chắc chắn tuyệt đối từ 16 mẫu. Wilson cho
+`[80.6, 100]`, tức "100 điểm" chỉ chứng minh được prompt đúng **ít nhất ~81%**.
+
+### 3. So hai prompt: McNemar exact (ghép cặp)
+
+```
+b = số ca A đúng / B sai        c = số ca A sai / B đúng
+n = b + c        k = min(b, c)
+p = 2 × Σ(i=0..k) C(n,i) / 2ⁿ
+```
+
+Chỉ đếm **ca bất đồng** — ca cả hai cùng đúng (hoặc cùng sai) không mang thông
+tin phân biệt. Dùng bản **exact** (nhị thức) chứ không xấp xỉ chi-bình-phương, vì
+số ca bất đồng thường rất nhỏ (< 25), chỗ mà xấp xỉ sai. Ca `None` (LLM lỗi) bị
+loại cả cặp — nếu giữ, lỗi mạng sẽ bị tính thành bằng chứng hai prompt khác nhau.
+
+### 4. Rút gọn prompt: non-inferiority
+
+```
+chấp nhận  ⟺  CI_dưới(prompt_mới) ≥ accuracy(prompt_gốc) − margin
+```
+
+**Không được suy `p > 0.05` ⇒ "hai prompt bằng nhau".** Không bác bỏ được H₀ không
+có nghĩa H₀ đúng — với bộ mẫu nhỏ thì p *luôn* > 0.05, nên lập luận đó sẽ luôn
+kết luận "không đổi" kể cả khi prompt mới tệ đi thật. Cách đúng là **đảo gánh
+nặng chứng minh**: chỉ chấp nhận khi cận dưới của khoảng tin cậy vẫn nằm trên
+ngưỡng.
+
+### 5. Vừa đúng vừa ngắn
+
+```
+vượt   = max(0, (số_từ − word_budget) / word_budget)
+điểm   = accuracy − brevity_weight × vượt
+```
+
+Chỉ phạt khi **dài hơn** ngân sách; ngắn hơn **không** được thưởng — nếu thưởng,
+optimizer sẽ cắt prompt tới mức cụt lủn để ăn điểm. Đếm **từ**, không dùng
+tokenizer của model nào: mỗi model tokenize một kiểu nên số token của model A
+không so được với model B.
+
+### 6. Đa model
+
+```
+điểm       = min( accuracy của từng model )        ← KHÔNG phải trung bình
+chênh_lệch = max − min
+mẫu số CI  = số MẪU, không phải số_model × số_mẫu
+```
+
+Lấy min vì trung bình cho phép model giỏi che model dở: 100 trên model A và 60
+trên model B có trung bình 80 — nghe ổn nhưng đó không phải prompt dùng chung
+được. Mẫu số không cộng dồn model vì đó là **cùng một bộ mẫu đo lặp**, không phải
+quan sát độc lập — cộng dồn sẽ làm khoảng tin cậy hẹp đi giả tạo.
+
 ## Đo lường hiệu quả prompt
 
 Một điểm accuracy trần là con số gây hiểu nhầm. Framework cung cấp sẵn các công
@@ -229,11 +308,25 @@ prompt mà accuracy không tụt quá 5 điểm":
 | 120 | ±5.4 | chưa đủ (chỉ tới 7đ) |
 | **200** | **±4.2** | **được** |
 
+Ba file, mở ra xem trực tiếp được:
+
+| File | Nội dung |
+|---|---|
+| [`examples/tickets.csv`](examples/tickets.csv) | cả 480 ca, chưa chia |
+| [`examples/tickets_train.csv`](examples/tickets_train.csv) | 280 ca — optimizer được xem |
+| [`examples/tickets_test.csv`](examples/tickets_test.csv) | **200 ca — giữ riêng, optimizer KHÔNG bao giờ thấy** |
+
+Code lúc chạy vẫn gọi `split_samples` chứ không đọc hai file đã chia; chúng chỉ để
+người đọc kiểm tra. `tests/test_bo_mau.py` canh cho chúng luôn khớp chính xác thứ
+`split_samples` sinh ra — nếu không, khi bộ mẫu đổi mà quên sinh lại, chúng sẽ âm
+thầm thành **dữ liệu ma**: mở ra đọc được, trông đúng, nhưng không phải tập test
+thật đã tạo ra con số trong báo cáo.
+
 ```python
 dev, test = split_samples(samples, test_size=200, seed=0)   # 280 / 200
 ```
 
-Sinh lại: `python -m prompt_tuning_framework.examples.make_tickets`
+Sinh lại cả ba file: `python -m prompt_tuning_framework.examples.make_tickets`
 
 ### Tách tập test — bắt buộc nếu muốn con số có nghĩa
 

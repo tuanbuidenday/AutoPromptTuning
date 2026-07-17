@@ -1,0 +1,201 @@
+text,label
+A paid account holder sees a blank page everywhere in the product. Please advise.,Yes
+FYI: a sandbox account would like email digests weekly instead of daily.,No
+"Hi team, a revenue-generating account cannot open any project.",Yes
+"Hi team, an account on our highest paid tier cannot save anything at all. Thanks.",Yes
+SEV1: an account under a signed SLA has every integration call returning an error. This cannot wait!!!,Yes
+HIGHEST PRIORITY! a free workspace would like the export file renamed. Escalate to your manager please!!!,No
+Our long-standing paid client gets an error on every click. No rush on our side.,Yes
+Quick note: a free-plan customer asks how the billing cycle works. Thanks.,No
+"Hi team, an account with zero paid seats asks for the documentation in PDF form.",No
+URGENT!!! a user in the fourteen-day trial cannot open any project.,No
+EMERGENCY — a Business-plan organisation would prefer a square avatar instead of a circle.,No
+"Hi team, a free-plan customer has their entire tenant offline. Please advise.",No
+"Hi team, a customer on the Business tier reports that the logo is misaligned on the settings page. Happy to give more detail.",No
+Morning — a demo account cannot load the workspace at all. No rush on our side.,No
+ESCALATE NOW: a paid workspace gets a timeout on every page. We need this resolved NOW.,Yes
+HIGHEST PRIORITY! a revenue-generating account gets a timeout on every page. I want an answer within the hour.,Yes
+HIGHEST PRIORITY! a proof-of-concept account cannot complete login because the session dies instantly. I want an answer within the hour.,No
+"Hello, a paid account holder has every integration call returning an error. Thanks.",Yes
+THIS IS A DISASTER — a customer on the Scale tier cannot access any feature whatsoever. We need this resolved NOW.,Yes
+"Hi team, a paid workspace cannot save anything at all. Please advise.",Yes
+MAJOR INCIDENT!!! an unpaid pilot account asks for a discount on their renewal. I want an answer within the hour.,No
+Quick note: a team on an annual contract has their dashboard permanently empty. Happy to give more detail.,Yes
+Morning — a customer on the Scale tier gets a 500 error on every request. No rush on our side.,Yes
+The client who renewed last month is stuck on an infinite loading spinner.,Yes
+THIS IS A DISASTER — a customer billed monthly suggests reordering the navigation menu. We need this resolved NOW.,No
+"Hi team, a commercial customer asks how to rotate their API key. No rush on our side.",No
+"Hi team, a customer with two hundred paid seats cannot authenticate through any method. Please advise.",Yes
+FYI: someone on a free trial requests an extra filter in the reporting view. No rush on our side.,No
+TOP PRIORITY!!! a trial account cannot reach the API at all. Escalate to your manager please!!!,No
+A user who declined to upgrade gets a timeout on every page. Thanks.,No
+ESCALATE NOW: a free signup from yesterday has their entire tenant offline. I want an answer within the hour.,No
+A trial account asks how the billing cycle works.,No
+FYI: a fully onboarded paying team would like a CSV export added next quarter.,No
+PLEASE HELP URGENTLY — someone still evaluating us sees a blank page everywhere in the product. We need this resolved NOW.,No
+SEV1: an account with an active subscription has all exports failing at the first row.,Yes
+SEV1: our premium customer reports a small rounding difference they can work around.,No
+TOP PRIORITY!!! a customer with two hundred paid seats cannot upload any file.,Yes
+PLEASE HELP URGENTLY — a demo account wants to schedule a call about our roadmap. We need this resolved NOW.,No
+FYI: someone on our free-forever plan says sync takes two minutes instead of one but finishes correctly. Happy to give more detail.,No
+CRITICAL: a paying customer gets a maintenance page on every route. We need this resolved NOW.,Yes
+"Hi team, our premium customer cannot access any feature whatsoever.",Yes
+Morning — a user on the community tier requests a training session for their new hires. Thanks.,No
+"Hi team, a lead trying the product says the invoice PDF has the address on the wrong line. Please advise.",No
+URGENT!!! a user in the fourteen-day trial cannot load the workspace at all. We need this resolved NOW.,No
+Quick note: an account with no subscription has every write rejected by the server. No rush on our side.,No
+FYI: an account with an active subscription cannot complete login because the session dies instantly. Let us know when you can.,Yes
+"Hello, an enterprise customer gets a maintenance page on every route. Let us know when you can.",Yes
+EMERGENCY — a customer billed monthly has their whole workspace returning 403. This cannot wait!!!,Yes
+Morning — our premium customer has their dashboard permanently empty.,Yes
+ESCALATE NOW: our premium customer has all exports failing at the first row. I want an answer within the hour.,Yes
+HIGHEST PRIORITY! a customer billed monthly cannot save anything at all. This cannot wait!!!,Yes
+"Hello, an account on our highest paid tier has every write rejected by the server. Let us know when you can.",Yes
+ASAP!!! a revenue-generating account is completely locked out. Escalate to your manager please!!!,Yes
+ESCALATE NOW: a revenue-generating account cannot save anything at all.,Yes
+Quick note: one of our contracted accounts has every API call fail. Thanks.,Yes
+SEV1: an account with an active subscription sees a blank page everywhere in the product. We need this resolved NOW.,Yes
+A subscriber on the Growth plan gets an error on every click. Thanks.,Yes
+ASAP!!! a paid workspace notes the tooltip is slightly cut off on wide screens. We need this resolved NOW.,No
+FYI: a customer with two hundred paid seats has all their jobs failing immediately.,Yes
+THIS IS A DISASTER — a customer billed monthly has every write rejected by the server. We need this resolved NOW.,Yes
+CRITICAL: a customer paying two thousand a month cannot save anything at all. This cannot wait!!!,Yes
+Morning — our largest paying client would prefer a square avatar instead of a circle. Please advise.,No
+ESCALATE NOW: an enterprise customer is stuck on an infinite loading spinner. This cannot wait!!!,Yes
+ASAP!!! an account with an active subscription says the invoice PDF has the address on the wrong line. We need this resolved NOW.,No
+ASAP!!! the client who renewed last month cannot perform a single action. This cannot wait!!!,Yes
+EMERGENCY — a trial account reports a small rounding difference they can work around. Please fix this immediately!!!,No
+SEV1: a customer on the Scale tier has every integration call returning an error. This cannot wait!!!,Yes
+THIS IS A DISASTER — an unlicensed account reports the footer year is out of date. We need this resolved NOW.,No
+ESCALATE NOW: a customer on the Scale tier says sync takes two minutes instead of one but finishes correctly. Escalate to your manager please!!!,No
+Quick note: a team on an annual contract has the app crash on launch every time. Thanks.,Yes
+BLOCKER!!! a customer whose invoice cleared last week cannot access any feature whatsoever. We need this resolved NOW.,Yes
+MAJOR INCIDENT!!! a subscribed organisation asks whether German is on the roadmap. I want an answer within the hour.,No
+TOP PRIORITY!!! our enterprise tenant has all their data unreachable. We need this resolved NOW.,Yes
+EMERGENCY — an unpaid pilot account cannot load the workspace at all. Please fix this immediately!!!,No
+Quick note: a customer on the Business tier has all their jobs failing immediately.,Yes
+SEV1: a free workspace cannot reach the API at all. This cannot wait!!!,No
+Morning — an account under a signed SLA gets a timeout on every page. Thanks.,Yes
+"Hello, an account on our highest paid tier cannot authenticate through any method. Thanks.",Yes
+MAJOR INCIDENT!!! a team on an annual contract cannot reach any of their data. This cannot wait!!!,Yes
+"Hi team, an evaluation account has the app crash on launch every time. Happy to give more detail.",No
+EMERGENCY — someone on a free trial cannot authenticate through any method. I want an answer within the hour.,No
+FYI: our enterprise tenant cannot log in at all.,Yes
+PLEASE HELP URGENTLY — our long-standing paid client gets an error on every click. Please fix this immediately!!!,Yes
+HIGHEST PRIORITY! a team on an annual contract has all their data unreachable. This cannot wait!!!,Yes
+A team on an annual contract cannot perform a single action. No rush on our side.,Yes
+HIGHEST PRIORITY! an account with an active subscription asks for the documentation in PDF form. Escalate to your manager please!!!,No
+FYI: a commercial customer cannot log in at all. Thanks.,Yes
+PLEASE HELP URGENTLY — an unlicensed account says the button colour does not match their brand. Please fix this immediately!!!,No
+"Hi team, a paid workspace sees a 502 on every single page. No rush on our side.",Yes
+FYI: a user whose trial has not converted cannot reach the API at all. Please advise.,No
+SEV1: a sandbox account cannot reach the API at all.,No
+Morning — a commercial customer has every integration call returning an error. Thanks.,Yes
+Morning — a licensed customer says the button colour does not match their brand. No rush on our side.,No
+Quick note: an enterprise customer has every API call fail. Please advise.,Yes
+"Hello, an unlicensed account asks for the documentation in PDF form. Please advise.",No
+Quick note: the client who renewed last month cannot authenticate through any method. Thanks.,Yes
+FYI: an account with an active subscription cannot log in at all.,Yes
+A free-tier user has their entire tenant offline. Happy to give more detail.,No
+EMERGENCY — a paid account holder sees a blank page everywhere in the product.,Yes
+TOP PRIORITY!!! our largest paying client requests a training session for their new hires. This cannot wait!!!,No
+ASAP!!! an account with an active subscription wants dark mode added. We need this resolved NOW.,No
+A customer whose invoice cleared last week says report generation is slow on huge datasets but completes. Thanks.,No
+THIS IS A DISASTER — a Business-plan organisation sees a blank page everywhere in the product.,Yes
+Morning — an account that never entered billing cannot load the workspace at all.,No
+EMERGENCY — a free signup from yesterday gets a maintenance page on every route.,No
+A paid account holder asks for a larger font in the sidebar. No rush on our side.,No
+A proof-of-concept account spotted an extra space in the page title.,No
+Morning — an account with no subscription has every integration call returning an error. Let us know when you can.,No
+SEV1: our premium customer wants dark mode added.,No
+"Hi team, a trial workspace asks how to rotate their API key. Happy to give more detail.",No
+A Pro-plan subscriber found a broken anchor link in the FAQ. Let us know when you can.,No
+Morning — our enterprise tenant says the button colour does not match their brand.,No
+ESCALATE NOW: a free-tier user suggests reordering the navigation menu. I want an answer within the hour.,No
+ASAP!!! a Pro-plan subscriber has every API call fail. Escalate to your manager please!!!,Yes
+A demo account sees a 502 on every single page. Please advise.,No
+TOP PRIORITY!!! our enterprise tenant has every API call fail. I want an answer within the hour.,Yes
+Quick note: a sandbox account requests a training session for their new hires.,No
+URGENT!!! a Business-plan organisation would like a CSV export added next quarter.,No
+PLEASE HELP URGENTLY — a subscriber on the Growth plan cannot authenticate through any method. Please fix this immediately!!!,Yes
+Morning — one of our contracted accounts cannot authenticate through any method. Happy to give more detail.,Yes
+A free signup from yesterday wants the success message to stay five seconds instead of three. Happy to give more detail.,No
+FYI: a paying customer has their entire tenant offline. Happy to give more detail.,Yes
+Quick note: a free workspace notes the tooltip is slightly cut off on wide screens. Let us know when you can.,No
+SEV1: a team on an annual contract sees a blank page everywhere in the product. I want an answer within the hour.,Yes
+Morning — a paid workspace has every integration call returning an error. No rush on our side.,Yes
+FYI: our long-standing paid client cannot reach any of their data. Thanks.,Yes
+ESCALATE NOW: a fully onboarded paying team asks how the billing cycle works. I want an answer within the hour.,No
+Someone still evaluating us cannot save anything at all. Happy to give more detail.,No
+"Hello, a free-plan customer wants to schedule a call about our roadmap.",No
+Morning — a customer billed monthly has all exports failing at the first row. Thanks.,Yes
+HIGHEST PRIORITY! a Business-plan organisation cannot load the workspace at all. We need this resolved NOW.,Yes
+"Hi team, a customer billed monthly has all their data unreachable. No rush on our side.",Yes
+FYI: a user who has never paid found a typo in the welcome email. No rush on our side.,No
+"Hi team, a Business-plan organisation cannot open any project.",Yes
+BLOCKER!!! a customer paying two thousand a month would like a CSV export added next quarter. We need this resolved NOW.,No
+Quick note: our premium customer says report generation is slow on huge datasets but completes. Please advise.,No
+ESCALATE NOW: a free-plan customer asks if we integrate with a tool we do not support yet.,No
+THIS IS A DISASTER — our long-standing paid client reports login fails in Internet Explorer 11 but works fine in Chrome. Please fix this immediately!!!,No
+MAJOR INCIDENT!!! our long-standing paid client wants the success message to stay five seconds instead of three. I want an answer within the hour.,No
+TOP PRIORITY!!! a fully onboarded paying team has every integration call returning an error. We need this resolved NOW.,Yes
+EMERGENCY — a fully onboarded paying team has every write rejected by the server. Please fix this immediately!!!,Yes
+FYI: an account that never entered billing asks how the billing cycle works. Happy to give more detail.,No
+An account with an active subscription cannot upload any file. Please advise.,Yes
+"Hi team, a customer billed monthly has their entire tenant offline. Thanks.",Yes
+ASAP!!! a subscriber on the Growth plan sees a blank page everywhere in the product. I want an answer within the hour.,Yes
+"Hello, a customer on the Business tier is completely locked out. No rush on our side.",Yes
+FYI: a subscribed organisation is completely locked out. Thanks.,Yes
+Morning — an account under a signed SLA has every integration call returning an error. Happy to give more detail.,Yes
+"Hello, a proof-of-concept account sees a 502 on every single page.",No
+SEV1: a proof-of-concept account cannot open any project.,No
+HIGHEST PRIORITY! our long-standing paid client wants to schedule a call about our roadmap. Please fix this immediately!!!,No
+EMERGENCY — someone on our free-forever plan would prefer a square avatar instead of a circle. I want an answer within the hour.,No
+THIS IS A DISASTER — an account with no subscription would like the export file renamed. Please fix this immediately!!!,No
+A paid workspace cannot log in at all. No rush on our side.,Yes
+"Hello, our long-standing paid client cannot load the workspace at all. Let us know when you can.",Yes
+"Hello, a user whose trial has not converted has all their data unreachable. No rush on our side.",No
+Morning — a paid workspace cannot authenticate through any method.,Yes
+EMERGENCY — our long-standing paid client gets a maintenance page on every route. Escalate to your manager please!!!,Yes
+TOP PRIORITY!!! an account under a signed SLA is stuck on an infinite loading spinner. This cannot wait!!!,Yes
+"Hi team, an account with an active subscription thinks the dropdown animation is a bit slow. No rush on our side.",No
+FYI: an account with an active subscription cannot save anything at all. Thanks.,Yes
+Quick note: an account on our highest paid tier spotted an extra space in the page title. Let us know when you can.,No
+CRITICAL: someone on a free trial cannot reach the API at all. Please fix this immediately!!!,No
+"Hi team, our enterprise tenant has all their data unreachable. Thanks.",Yes
+"Hello, a prospect on the free plan reports the footer year is out of date.",No
+ASAP!!! our premium customer gets a maintenance page on every route. Please fix this immediately!!!,Yes
+BLOCKER!!! a revenue-generating account has their entire tenant offline. I want an answer within the hour.,Yes
+PLEASE HELP URGENTLY — someone still evaluating us has every write rejected by the server. We need this resolved NOW.,No
+FYI: a Business-plan organisation cannot log in at all. Let us know when you can.,Yes
+CRITICAL: a team on an annual contract has every write rejected by the server. Escalate to your manager please!!!,Yes
+ESCALATE NOW: a customer billed monthly cannot reach the API at all.,Yes
+HIGHEST PRIORITY! an account with an active subscription gets an error on every click. We need this resolved NOW.,Yes
+BLOCKER!!! a customer on the Business tier has every API call fail. We need this resolved NOW.,Yes
+BLOCKER!!! a user in the fourteen-day trial cannot reach any of their data. Please fix this immediately!!!,No
+"Hello, a fully onboarded paying team gets an error on every click. No rush on our side.",Yes
+CRITICAL: a commercial customer cannot perform a single action.,Yes
+FYI: a free workspace has their entire tenant offline.,No
+CRITICAL: a proof-of-concept account asks whether German is on the roadmap.,No
+BLOCKER!!! an unpaid pilot account cannot authenticate through any method.,No
+ASAP!!! a user on the community tier thinks the dropdown animation is a bit slow. This cannot wait!!!,No
+EMERGENCY — a customer whose invoice cleared last week found a typo in the welcome email. This cannot wait!!!,No
+FYI: a Business-plan organisation cannot load the workspace at all. Thanks.,Yes
+"Morning — one of our contracted accounts finds the mobile layout awkward on old tablets, though desktop is fine. Happy to give more detail.",No
+"Hello, a trial workspace reports the footer year is out of date. Please advise.",No
+TOP PRIORITY!!! a free-tier user says the invoice PDF has the address on the wrong line.,No
+SEV1: the client who renewed last month has every API call fail. This cannot wait!!!,Yes
+"Hello, someone on a free trial is stuck on an infinite loading spinner. Please advise.",No
+URGENT!!! a paying customer cannot log in at all. Please fix this immediately!!!,Yes
+One of our contracted accounts cannot upload any file. No rush on our side.,Yes
+CRITICAL: our largest paying client says sync takes two minutes instead of one but finishes correctly. We need this resolved NOW.,No
+PLEASE HELP URGENTLY — our enterprise tenant has the app crash on launch every time. I want an answer within the hour.,Yes
+ASAP!!! the client who renewed last month asks for a larger font in the sidebar. Please fix this immediately!!!,No
+Morning — a free-plan customer cannot reach any of their data. Happy to give more detail.,No
+MAJOR INCIDENT!!! a subscriber on the Growth plan gets a timeout on every page. We need this resolved NOW.,Yes
+BLOCKER!!! a licensed customer gets a timeout on every page. Escalate to your manager please!!!,Yes
+EMERGENCY — our largest paying client notes the dark theme contrast is low but still readable. Escalate to your manager please!!!,No
+CRITICAL: a subscribed organisation cannot reach the API at all. Escalate to your manager please!!!,Yes
+"Hi team, our premium customer sees a 502 on every single page. Happy to give more detail.",Yes
+An account that never entered billing asks whether German is on the roadmap. No rush on our side.,No
+MAJOR INCIDENT!!! a free-tier developer cannot complete login because the session dies instantly. This cannot wait!!!,No

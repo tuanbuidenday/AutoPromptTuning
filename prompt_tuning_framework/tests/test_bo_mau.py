@@ -152,3 +152,43 @@ def test_generator_khop_file_da_ghi(mau):
     rows = build()
     assert len(rows) == len(mau)
     assert {t for t, _ in rows} == {s.text for s in mau}
+
+
+# ---------- file train/test xuất ra phải luôn khớp -----------------------
+F_TRAIN = Path(__file__).parent.parent / "examples" / "tickets_train.csv"
+F_TEST = Path(__file__).parent.parent / "examples" / "tickets_test.csv"
+
+
+def test_file_train_test_khop_voi_split_samples(mau):
+    """Hai file xuất ra phải khớp CHÍNH XÁC thứ split_samples sinh ra lúc chạy.
+
+    Đây là test quan trọng nhất của cặp file này. Chúng chỉ để người đọc mở ra
+    xem — code thật vẫn gọi split_samples. Nếu bộ mẫu đổi mà quên chạy lại
+    make_tickets, hai file sẽ âm thầm thành DỮ LIỆU MA: trông đúng, mở ra đọc
+    được, nhưng không phải tập test thật đã dùng để ra con số trong báo cáo.
+    """
+    from prompt_tuning_framework import split_samples
+    from prompt_tuning_framework.examples.make_tickets import N_TEST, SPLIT_SEED
+
+    dev, test = split_samples(mau, test_size=N_TEST, seed=SPLIT_SEED)
+    f_train = load_samples_csv(str(F_TRAIN))
+    f_test = load_samples_csv(str(F_TEST))
+
+    assert [s.text for s in f_train] == [s.text for s in dev], \
+        "tickets_train.csv lệch — chạy lại: python -m prompt_tuning_framework.examples.make_tickets"
+    assert [s.text for s in f_test] == [s.text for s in test], \
+        "tickets_test.csv lệch — chạy lại: python -m prompt_tuning_framework.examples.make_tickets"
+    assert [s.label for s in f_test] == [s.label for s in test]
+
+
+def test_file_train_test_khong_ro_ri():
+    """Một ca nằm ở cả hai tập là hỏng toàn bộ ý nghĩa của tập test."""
+    f_train = load_samples_csv(str(F_TRAIN))
+    f_test = load_samples_csv(str(F_TEST))
+    assert not ({s.text for s in f_train} & {s.text for s in f_test})
+    assert len(f_train) == 280 and len(f_test) == 200
+
+
+def test_file_test_can_bang_nhan():
+    f_test = load_samples_csv(str(F_TEST))
+    assert sum(1 for s in f_test if s.label == "Yes") == 100

@@ -38,7 +38,14 @@ import random
 from pathlib import Path
 
 OUT = Path(__file__).parent / "tickets.csv"
+OUT_TRAIN = Path(__file__).parent / "tickets_train.csv"
+OUT_TEST = Path(__file__).parent / "tickets_test.csv"
 SEED = 20260717
+
+# Cách chia dùng ở mọi nơi. Ghi thành hằng số để file train/test xuất ra luôn
+# khớp với thứ hard_example dùng lúc chạy.
+SPLIT_SEED = 0
+N_TEST = 200
 
 # --- chủ thể ĐANG TRẢ TIỀN (nhiều cách diễn đạt, tránh trùng từ khoá) --------
 PAYING = [
@@ -191,16 +198,34 @@ def build():
     return rows
 
 
-def main():
-    rows = build()
-    with open(OUT, "w", newline="", encoding="utf-8") as f:
+def _ghi(path: Path, rows) -> None:
+    with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["text", "label"])
         w.writerows(rows)
 
+
+def _thong_ke(rows) -> str:
     n_yes = sum(1 for _, l in rows if l == "Yes")
-    print(f"Đã ghi {len(rows)} ticket vào {OUT}")
-    print(f"  Yes: {n_yes}   No: {len(rows) - n_yes}")
+    return f"{len(rows):>3} ca  (Yes {n_yes} / No {len(rows) - n_yes})"
+
+
+def main():
+    rows = build()
+    _ghi(OUT, rows)
+    print(f"{OUT.name:20} {_thong_ke(rows)}")
+
+    # Xuất luôn tập train/test đã chia. Về kỹ thuật thì seed cố định là đủ để tái
+    # tạo, nhưng người đọc báo cáo cần MỞ RA XEM được tập test mà không phải chạy
+    # code. tests/test_bo_mau.py canh cho hai file này luôn khớp split_samples,
+    # nếu không chúng sẽ âm thầm thành dữ liệu ma khi bộ mẫu đổi.
+    from ..data import load_samples_csv, split_samples
+
+    dev, test = split_samples(load_samples_csv(str(OUT)),
+                              test_size=N_TEST, seed=SPLIT_SEED)
+    for path, bo in ((OUT_TRAIN, dev), (OUT_TEST, test)):
+        _ghi(path, [(s.text, s.label) for s in bo])
+        print(f"{path.name:20} {_thong_ke([(s.text, s.label) for s in bo])}")
 
 
 if __name__ == "__main__":
