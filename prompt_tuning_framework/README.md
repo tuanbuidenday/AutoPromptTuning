@@ -5,6 +5,9 @@ Framework tối ưu hóa & tinh chỉnh prompt tự động / bán tự động.
 Framework giữ vòng lặp chính và gọi ngược lại code của bạn (Inversion of Control) —
 bạn chỉ cắm component vào 4 điểm mở rộng.
 
+> 📋 **[HOI_DAP.md](HOI_DAP.md)** — các câu hỏi thường gặp, mỗi câu kèm **lệnh
+> chạy được ngay** để tự kiểm chứng thay vì tin lời tác giả.
+
 ## Cài đặt
 
 ```bash
