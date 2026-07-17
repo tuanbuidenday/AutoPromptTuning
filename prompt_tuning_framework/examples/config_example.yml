@@ -1,0 +1,31 @@
+# Cấu hình mẫu — dựng PromptTuner hoàn toàn bằng YAML.
+# Đổi optimizer.name giữa 'autoprompt' / 'llm_rewrite' mà KHÔNG sửa một dòng code.
+
+task_description: "Classify whether a short text describes a dog or a cat. Answer Yes for dog, No for cat."
+max_iters: 3
+target_score: 100
+patience: 2
+
+store:
+    name: sqlite
+    params:
+        db_path: prompt_versions.db
+        run_name: dog-vs-cat
+
+executor:
+    name: llm
+    params:
+        provider: google
+        model: gemini-3.1-flash-lite   # model rẻ nhất — vai "thí sinh"
+        labels: ["Yes", "No"]
+        num_workers: 1
+
+evaluator:
+    name: accuracy
+
+optimizer:
+    name: autoprompt                   # <-- đổi thành llm_rewrite là xong
+    params:
+        provider: google
+        model: gemini-3.5-flash        # model mạnh hơn — vai "người sửa prompt"
+        labels: ["Yes", "No"]

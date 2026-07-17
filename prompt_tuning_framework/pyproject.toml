@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-tuning-framework"
+version = "0.1.0"
+description = "Framework tối ưu hóa và tinh chỉnh prompt tự động/bán tự động (Quản lý → Thực thi → Đánh giá → Tối ưu)"
+readme = "README.md"
+# langchain-core yêu cầu >=3.10 -> khai >=3.9 sẽ khiến pip install fail trên 3.9.
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+keywords = ["prompt", "prompt-tuning", "prompt-optimization", "llm", "framework"]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "langchain-core>=0.1",
+]
+
+[project.optional-dependencies]
+google = ["langchain-google-genai>=1.0"]
+openai = ["langchain-openai>=0.1"]
+# Plugin AutoPrompt (optimizer tuỳ chọn) cần chính repo AutoPrompt trong PYTHONPATH
+autoprompt = ["easydict>=1.11", "langchain>=0.2,<0.3"]
+test = ["pytest>=7.0"]
+all = [
+    "langchain-google-genai>=1.0",
+    "langchain-openai>=0.1",
+    "easydict>=1.11",
+    "pytest>=7.0",
+]
+
+[project.scripts]
+prompt-tune = "prompt_tuning_framework.cli:main"
+
+[tool.setuptools]
+# Thư mục này CHÍNH LÀ package prompt_tuning_framework
+package-dir = { "prompt_tuning_framework" = "." }
+packages = [
+    "prompt_tuning_framework",
+    "prompt_tuning_framework.core",
+    "prompt_tuning_framework.components",
+    "prompt_tuning_framework.components.stores",
+    "prompt_tuning_framework.components.executors",
+    "prompt_tuning_framework.components.evaluators",
+    "prompt_tuning_framework.components.optimizers",
+    "prompt_tuning_framework.examples",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
