@@ -1,0 +1,97 @@
+text,label
+"Enterprise customer cannot log in at all since this morning. Their entire team is unable to work.",Yes
+"Payment API returns 500 for every transaction on the Pro plan. No orders are going through.",Yes
+"A paying customer's production site is down; our database connector fails on every request.",Yes
+"Paid user's dashboard renders a blank page. They cannot reach any of their data.",Yes
+"Business plan customer cannot reach our API at all; their integration has been down for an hour.",Yes
+"Pro subscriber reports that every page load returns a 502. Nothing in the product responds.",Yes
+"Enterprise account: SSO login loops forever, so none of their 400 staff can get in.",Yes
+"Paying customer's scheduled exports have all failed since the deploy. They have no data at all.",Yes
+"Our largest paid client says checkout is completely broken for their end users.",Yes
+"Premium account cannot upload any file; every attempt ends with an internal error.",Yes
+"Paid workspace is stuck on a loading spinner indefinitely. No feature is reachable.",Yes
+"Subscribed customer's webhooks stopped firing entirely, halting their order pipeline.",Yes
+"Enterprise tenant is locked out after the migration; their admin console is inaccessible.",Yes
+"Paying team reports every search query times out, making the product unusable.",Yes
+"Pro plan user's account shows zero projects; all their work appears inaccessible.",Yes
+"A paid customer's API keys were all invalidated and they cannot authenticate at all.",Yes
+"Enterprise client's data sync has fully stopped; nothing has updated in six hours.",Yes
+"Paid user cannot complete any action; the app throws an error on every click.",Yes
+"Business subscriber's dashboard is empty and their reports return nothing at all.",Yes
+"Our paying customer cannot process a single payment; the gateway rejects everything.",Yes
+"Enterprise customer's entire workspace returns 403 for all members since the update.",Yes
+"Paid account is completely frozen, no read or write operation succeeds.",Yes
+"Pro customer's mobile app crashes on launch every time, blocking all usage.",Yes
+"Paying client cannot access any of their stored documents; storage returns errors.",Yes
+"A subscribed team's login page will not load at all, so nobody can start work.",Yes
+"Paid tenant's database queries all fail, taking their live service offline.",Yes
+"Enterprise user reports the platform is entirely unreachable from their network.",Yes
+"Our paid customer's integration returns errors on every call and has fully stopped.",Yes
+"Premium client cannot render any report; every request ends in a server error.",Yes
+"Paying customer's checkout flow fails at the final step for all their buyers.",Yes
+"Business account is unable to invite, remove or manage any user; admin is dead.",Yes
+"Paid subscriber's real-time feed is completely silent; no events arrive at all.",Yes
+"Enterprise customer cannot export anything; every export job fails immediately.",Yes
+"Paying user's session expires instantly on login, leaving them permanently locked out.",Yes
+"Pro account's entire project list fails to load; the workspace is unusable.",Yes
+"Paid customer's API returns 401 for valid credentials, blocking their production system.",Yes
+"Subscribed client cannot save any change; every write is rejected by the server.",Yes
+"Enterprise team's shared workspace is inaccessible to all members right now.",Yes
+"Paying customer's billing portal will not open, and they cannot manage their plan at all.",Yes
+"Paid user reports total failure of the notification system; nothing is delivered.",Yes
+"Our enterprise client's entire tenant returns a maintenance page though we are not in maintenance.",Yes
+"Pro customer cannot create any record; the create endpoint fails every time.",Yes
+"Paying account's dashboards all show connection errors and no data whatsoever.",Yes
+"Business plan user is completely unable to authenticate through any method.",Yes
+"Paid client's bulk import fails at the first row every time, blocking onboarding.",Yes
+"Enterprise subscriber reports every microservice call returns a timeout.",Yes
+"Paying customer's account page is blank and their subscription details are unreachable.",Yes
+"Premium user cannot access the product at all following the password reset flow.",Yes
+"This is absolutely unacceptable!!! The logo is misaligned on the settings page.",No
+"URGENT!!! I need dark mode immediately, my eyes hurt every night.",No
+"CRITICAL: the welcome email has a typo, it says 'Welcom'.",No
+"EMERGENCY! Our account manager has not replied to my email since yesterday afternoon.",No
+"TOP PRIORITY!!! The button color does not match our brand guidelines.",No
+"This is a disaster! The footer copyright year still says last year.",No
+"URGENT: please change the font size in the sidebar, it looks too small.",No
+"CRITICAL ISSUE!!! The tooltip text is slightly cut off on wide screens.",No
+"ASAP!!! I want the export file renamed to include today's date.",No
+"SEVERE PROBLEM: the loading spinner spins clockwise, we prefer counter-clockwise.",No
+"URGENT!!! Your documentation page has a broken anchor link in the FAQ section.",No
+"HIGHEST PRIORITY! The avatar image is a circle but we would like a square.",No
+"This is an emergency!!! Our invoice PDF has the address on the wrong line.",No
+"CRITICAL!!! The dropdown animation feels a bit slow to our design team.",No
+"URGENT: the success message disappears after three seconds, we want five.",No
+"MAJOR INCIDENT!!! There is an extra space in the page title text.",No
+"Login is broken in Internet Explorer 11, but it works fine in Chrome and Firefox.",No
+"Free trial user reports the export button takes 8 seconds.",No
+"Could you explain how the billing cycle works? I am confused about the invoice date.",No
+"Paying customer would like a CSV export feature added next quarter.",No
+"The mobile layout is awkward on very old tablets, but desktop works perfectly.",No
+"Paid customer asks whether we plan to support German language next year.",No
+"Report generation is slow on huge datasets, though it completes successfully.",No
+"Enterprise client requests a training session for their new hires next month.",No
+"Paying user wants to know if we integrate with a tool we do not support yet.",No
+"The dark theme has slightly low contrast, but everything remains readable and usable.",No
+"Paid customer asks for a discount on their upcoming renewal.",No
+"Sync takes two minutes instead of one, but it finishes correctly every time.",No
+"Pro user requests an additional filter option in the reporting view.",No
+"Customer asks how to rotate their API key; the documentation covers it already.",No
+"Business client wants to schedule a call to discuss our product roadmap.",No
+"Paid user reports a minor rounding difference in a summary figure they can work around.",No
+"Free tier user cannot log in at all and is completely blocked from using the product.",No
+"A trial account's workspace fails to load entirely. The user cannot access any feature.",No
+"Free plan user gets a 500 error on every single API call. Their integration is completely dead.",No
+"Trial user's dashboard is entirely blank and none of their data is reachable.",No
+"Free account holder cannot authenticate at all; they are fully locked out.",No
+"A user on the free tier reports every page returns a 502 and nothing works.",No
+"Trial account cannot upload any file; all attempts fail with a server error.",No
+"Free plan customer's entire workspace returns 403 and is completely inaccessible.",No
+"Someone on the free tier says the app crashes on launch every single time.",No
+"Trial user cannot save anything; every write operation is rejected.",No
+"Free account's exports all fail immediately, so they have no data at all.",No
+"A trial workspace is stuck loading forever and no feature can be reached.",No
+"Free tier user's API keys do not work at all and they cannot connect.",No
+"Unpaid evaluation account is completely frozen; no operation succeeds.",No
+"Free plan user reports total failure of every feature in the product.",No
+"A prospective customer on a free trial cannot access the platform whatsoever.",No

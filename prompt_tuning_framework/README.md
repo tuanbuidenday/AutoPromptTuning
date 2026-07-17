@@ -170,12 +170,103 @@ available("optimizer")   # ['autoprompt', 'llm_rewrite']
    ④ BaseOptimizer   ──┘   optimizer.propose(errors)       → Tối ưu hóa
 ```
 
+## Đo lường hiệu quả prompt
+
+Một điểm accuracy trần là con số gây hiểu nhầm. Framework cung cấp sẵn các công
+cụ để đo cho đúng.
+
+### Tách tập test — bắt buộc nếu muốn con số có nghĩa
+
+Optimizer được xem các ca **sai** để viết lại prompt. Nếu chấm điểm trên chính
+những ca đó thì prompt chỉ đang vá thuộc lòng, và 100/100 thu được là **điểm học
+thuộc**, không nói lên gì về ca mới.
+
+```python
+from prompt_tuning_framework import split_samples
+
+dev, test = split_samples(samples, test_ratio=0.5, seed=0)  # phân tầng theo nhãn
+best = tuner.run(prompt, dev, test_samples=test)            # optimizer không thấy test
+
+print(best.metadata["test_score"])                          # con số đáng công bố
+print(best.metadata["test_ci_low"], best.metadata["test_ci_high"])
+```
+
+Điểm dev cao hơn điểm test quá 10 điểm sẽ bị log cảnh báo `HỌC THUỘC`.
+
+### Khoảng tin cậy — luôn đọc kèm điểm
+
+```python
+result.score                 # 100.0
+result.confidence_interval   # (80.6, 100.0)  <- 16 mẫu chỉ chứng minh được >= ~81%
+result.margin_of_error       # ~9.7
+```
+
+### Hai prompt có thật sự khác nhau không?
+
+```python
+a.distinguishable_from(b)    # kiểm định ghép cặp McNemar trên cùng bộ mẫu
+```
+
+Trên 16 mẫu, 100.0 và 93.8 chỉ hơn nhau **đúng một ca** — không phân biệt được.
+Cần **6 ca** lật từ sai sang đúng mới đạt p < 0.05:
+
+```python
+from prompt_tuning_framework import min_flips_for_significance
+min_flips_for_significance(0.05)   # 6
+```
+
+### Rút gọn prompt mà không mất độ chính xác
+
+Đây là bài toán **non-inferiority** — chứng minh accuracy KHÔNG tụt, khó hơn
+chứng minh nó tăng. Không được suy `p > 0.05` ⇒ "bằng nhau": với bộ mẫu nhỏ thì
+p luôn > 0.05, nên lập luận đó sẽ *luôn* kết luận "không đổi" kể cả khi prompt
+mới tệ đi thật.
+
+```python
+from prompt_tuning_framework import non_inferiority
+
+non_inferiority(base_correct=15, new_correct=15, num_total=16, margin_pp=5.0)
+# False — điểm y hệt nhau, nhưng 16 mẫu KHÔNG đủ để kết luận
+non_inferiority(base_correct=180, new_correct=180, num_total=200, margin_pp=5.0)
+# True
+```
+
+### Tối ưu vừa đúng vừa ngắn
+
+```python
+from prompt_tuning_framework.components import CompositeEvaluator
+
+evaluator = CompositeEvaluator(word_budget=50, brevity_weight=10)
+# điểm = accuracy - brevity_weight * phần_trăm_vượt_ngân_sách
+```
+
+Chỉ phạt khi prompt **dài hơn** ngân sách; ngắn hơn không được thưởng — nếu
+thưởng, optimizer sẽ cắt prompt tới mức cụt lủn để ăn điểm.
+
+### Prompt có tốt cho nhiều model không?
+
+```python
+from prompt_tuning_framework.components import (MultiModelExecutor,
+                                                CrossModelEvaluator)
+
+executor = MultiModelExecutor(models=[
+    {"provider": "google", "model": "gemini-3.1-flash-lite"},
+    {"provider": "openai", "model": "gpt-4o-mini"},
+], labels=LABELS)
+evaluator = CrossModelEvaluator()      # điểm = accuracy của model YẾU NHẤT
+```
+
+Lấy **min** chứ không lấy trung bình: prompt đạt 100 trên model A và 60 trên
+model B có trung bình 80 — nghe ổn, nhưng đó không phải prompt dùng chung được.
+`metrics["accuracy_spread"]` cho biết prompt kén model tới mức nào.
+
 ## Cấu trúc
 
 ```
 prompt_tuning_framework/
 ├── core/
 │   ├── types.py        Sample, Prediction, EvalResult, PromptVersion
+│   ├── stats.py        Wilson CI, McNemar, non-inferiority
 │   ├── interfaces.py   ⭐ 4 điểm mở rộng (abstract)
 │   ├── registry.py     Đăng ký plugin theo tên
 │   └── tuner.py        ⭐ PromptTuner — giữ vòng lặp (IoC)

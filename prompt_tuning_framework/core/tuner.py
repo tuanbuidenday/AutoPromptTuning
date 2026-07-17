@@ -69,8 +69,20 @@ class PromptTuner:
                 logger.exception("Callback %s lỗi", event)
 
     # ---- vòng lặp chính ----------------------------------------------
-    def run(self, initial_prompt: str, samples: List[Sample]) -> Optional[PromptVersion]:
-        """Chạy vòng lặp tối ưu, trả về phiên bản prompt tốt nhất."""
+    def run(self, initial_prompt: str, samples: List[Sample],
+            test_samples: Optional[List[Sample]] = None) -> Optional[PromptVersion]:
+        """Chạy vòng lặp tối ưu, trả về phiên bản prompt tốt nhất.
+
+        :param samples: tập DEV — dùng để chấm và để optimizer xem lỗi mà sửa prompt.
+        :param test_samples: tập TEST giữ riêng, optimizer KHÔNG bao giờ thấy. Nếu
+            truyền vào, prompt tốt nhất sẽ được chấm thêm một lần trên tập này sau
+            khi vòng lặp kết thúc, và kết quả ghi vào ``best.metadata``.
+
+            Nên truyền. Điểm trên tập dev là điểm HỌC THUỘC: optimizer đã được xem
+            đúng những ca sai đó rồi viết prompt vá chúng, nên đạt 100/100 trên dev
+            là chuyện hiển nhiên và không chứng minh prompt tốt với ca mới. Chỉ có
+            điểm trên tập test mới nói lên khả năng khái quát hoá.
+        """
         if not samples:
             raise ValueError("Cần ít nhất 1 sample để đánh giá prompt.")
 
@@ -140,5 +152,48 @@ class PromptTuner:
             version = self.store.save(prompt, {"source": "optimizer", "iteration": i + 1})
 
         best = self.store.best()
+        if best is not None and test_samples:
+            self._evaluate_on_test(best, test_samples)
         self._fire("on_run_end", best)
         return best
+
+    # ---- tập test giữ riêng -------------------------------------------
+    def _evaluate_on_test(self, best: PromptVersion,
+                          test_samples: List[Sample]) -> None:
+        """Chấm prompt tốt nhất trên tập test và ghi kết quả vào metadata.
+
+        Chỉ chạy MỘT lần, sau khi vòng lặp đã chốt. Nếu dùng điểm test để chọn
+        prompt thì tập test lập tức biến thành tập dev thứ hai và mất hết ý nghĩa.
+        """
+        predictions = self.executor.execute(best.text, test_samples)
+        result = self.evaluator.evaluate(best.text, predictions, test_samples)
+
+        lo, hi = result.confidence_interval
+        best.metadata.update({
+            "test_score": result.score,
+            "test_ci_low": round(lo, 1),
+            "test_ci_high": round(hi, 1),
+            "test_num_scored": result.num_scored,
+            "test_reliable": result.reliable,
+        })
+
+        if not result.reliable:
+            logger.error(
+                "Tập test: chỉ chấm được %s/%s ca — điểm %.1f/100 KHÔNG đáng tin.",
+                result.num_scored, len(test_samples), result.score)
+            return
+
+        logger.info("Tập test (giữ riêng): %.1f/100 — khoảng tin cậy 95%% [%.1f, %.1f] "
+                    "trên %s ca.", result.score, lo, hi, result.num_scored)
+
+        # Điểm dev cao hơn hẳn điểm test = prompt đã vá thuộc lòng các ca dev.
+        # Đây là dấu hiệu học thuộc, và là lý do tồn tại của tập test.
+        dev_score = best.score
+        if dev_score is not None:
+            gap = dev_score - result.score
+            if gap > 10:
+                logger.warning(
+                    "HỌC THUỘC: điểm dev %.1f nhưng test chỉ %.1f (chênh %.1f điểm). "
+                    "Prompt đang vá riêng các ca dev thay vì học quy luật chung. "
+                    "Hãy báo cáo điểm TEST, đừng báo cáo điểm dev.",
+                    dev_score, result.score, gap)

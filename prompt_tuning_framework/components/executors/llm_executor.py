@@ -60,8 +60,10 @@ class LLMExecutor(BaseExecutor):
         try:
             raw = self.llm.invoke(text).content
         except Exception as e:  # lỗi mạng/quota -> đánh dấu, không làm sập cả run
-            return Prediction(sample_id=sample.id, output=f"__ERROR__: {e}")
-        return Prediction(sample_id=sample.id, output=self._normalize(raw))
+            return Prediction(sample_id=sample.id, output=f"__ERROR__: {e}",
+                              model=self.model)
+        return Prediction(sample_id=sample.id, output=self._normalize(raw),
+                          model=self.model)
 
     def execute(self, prompt: str, samples: List[Sample]) -> List[Prediction]:
         if self.num_workers <= 1:

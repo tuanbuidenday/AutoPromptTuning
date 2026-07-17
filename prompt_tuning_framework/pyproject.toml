@@ -33,6 +33,11 @@ all = [
 [project.scripts]
 prompt-tune = "prompt_tuning_framework.cli:main"
 
+[tool.setuptools.package-data]
+# Không khai ở đây thì setuptools chỉ đóng gói file .py: bản cài từ wheel sẽ
+# thiếu tickets.csv và config_example.yml, và examples chết vì FileNotFoundError.
+"prompt_tuning_framework.examples" = ["*.csv", "*.yml"]
+
 [tool.setuptools]
 # Thư mục này CHÍNH LÀ package prompt_tuning_framework
 package-dir = { "prompt_tuning_framework" = "." }
