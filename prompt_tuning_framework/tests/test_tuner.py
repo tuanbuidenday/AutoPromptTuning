@@ -20,7 +20,7 @@ def _tuner(executor=None, evaluator=None, optimizer=None, **kw):
     )
 
 
-def test_toi_uu_cai_thien_diem(samples):
+def test_optimization_improves_the_score(samples):
     """Prompt dở phải được sửa thành prompt tốt hơn."""
     t = _tuner(max_iters=3)
     best = t.run(BAD_PROMPT, samples)
@@ -32,7 +32,7 @@ def test_toi_uu_cai_thien_diem(samples):
     assert best.score > hist[0].score
 
 
-def test_framework_goi_nguoc_component_cua_nguoi_dung(samples):
+def test_framework_calls_back_into_user_components(samples):
     """Chứng minh IoC: tuner phải GỌI executor/optimizer của người dùng."""
     ex, opt = FakeExecutor(), FakeOptimizer()
     _tuner(executor=ex, optimizer=opt, max_iters=3).run(BAD_PROMPT, samples)
@@ -40,21 +40,21 @@ def test_framework_goi_nguoc_component_cua_nguoi_dung(samples):
     assert opt.calls >= 1  # được nhờ đề xuất ít nhất 1 lần
 
 
-def test_dung_som_khi_dat_target_score(samples):
+def test_stops_early_at_target_score(samples):
     t = _tuner(max_iters=10)
     t.run(BAD_PROMPT, samples)
     # vòng 0 = 50, vòng 1 = 100 -> dừng ngay, chỉ có 2 phiên bản
     assert len(t.store.history()) == 2
 
 
-def test_ton_trong_max_iters(samples):
+def test_respects_max_iters(samples):
     """Điểm không bao giờ đạt target -> phải dừng đúng số vòng."""
     t = _tuner(evaluator=ConstantEvaluator(10.0), max_iters=3)
     t.run(BAD_PROMPT, samples)
     assert len(t.store.history()) == 3
 
 
-def test_dung_khi_optimizer_bo_cuoc(samples):
+def test_stops_when_optimizer_gives_up(samples):
     """Optimizer trả rỗng -> dừng an toàn, không sập."""
     t = _tuner(optimizer=FakeOptimizer(give_up=True), max_iters=5)
     best = t.run(BAD_PROMPT, samples)
@@ -62,7 +62,7 @@ def test_dung_khi_optimizer_bo_cuoc(samples):
     assert best.text == BAD_PROMPT
 
 
-def test_dung_khi_optimizer_lap_lai_prompt_cu(samples):
+def test_stops_when_optimizer_repeats_the_old_prompt(samples):
     """Optimizer đề xuất trùng prompt hiện tại -> dừng, không lặp vô ích."""
     from prompt_tuning_framework import BaseOptimizer
 
@@ -75,19 +75,19 @@ def test_dung_khi_optimizer_lap_lai_prompt_cu(samples):
     assert len(t.store.history()) == 1
 
 
-def test_patience_dung_khi_khong_cai_thien(samples):
+def test_patience_stops_when_there_is_no_improvement(samples):
     t = _tuner(evaluator=ConstantEvaluator(10.0), max_iters=10, patience=2)
     t.run(BAD_PROMPT, samples)
     assert len(t.store.history()) < 10  # dừng sớm nhờ patience
 
 
-def test_moi_phien_ban_deu_duoc_cham_diem(samples):
+def test_every_version_gets_scored(samples):
     t = _tuner(max_iters=3)
     t.run(BAD_PROMPT, samples)
     assert all(v.score is not None for v in t.store.history())
 
 
-def test_tra_ve_phien_ban_tot_nhat_khong_phai_cuoi_cung(samples):
+def test_returns_the_best_version_not_the_last(samples):
     """Điểm có thể tụt; best() phải trả bản điểm cao nhất."""
     class Dropping(ConstantEvaluator):
         def __init__(self):
@@ -102,7 +102,7 @@ def test_tra_ve_phien_ban_tot_nhat_khong_phai_cuoi_cung(samples):
     assert best.score == 80.0 and best.version == 0
 
 
-def test_callback_duoc_goi(samples):
+def test_callbacks_are_called(samples):
     events = []
 
     class Spy(BaseCallback):
@@ -120,7 +120,7 @@ def test_callback_duoc_goi(samples):
     assert "iter0" in events
 
 
-def test_callback_loi_khong_lam_sap_vong_lap(samples):
+def test_callback_error_does_not_crash_the_loop(samples):
     class Broken(BaseCallback):
         def on_iteration_end(self, iteration, version, result):
             raise RuntimeError("callback hỏng")
@@ -129,12 +129,12 @@ def test_callback_loi_khong_lam_sap_vong_lap(samples):
     assert best is not None  # vẫn chạy xong
 
 
-def test_dataset_rong_bao_loi():
+def test_empty_dataset_errors():
     with pytest.raises(ValueError, match="ít nhất 1 sample"):
         _tuner().run(BAD_PROMPT, [])
 
 
-def test_store_mac_dinh_la_memory(samples):
+def test_store_defaults_to_memory(samples):
     t = PromptTuner(executor=FakeExecutor(), evaluator=AccuracyEvaluator(),
                     optimizer=FakeOptimizer(), max_iters=1)
     t.run(BAD_PROMPT, samples)

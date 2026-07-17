@@ -56,7 +56,7 @@ jobs:
         run: pip install -e "prompt_tuning_framework/[test,verify]"
 
       - name: Đối chiếu + mô phỏng
-        run: pytest prompt_tuning_framework/tests/test_do_luong_dung_khong.py -v
+        run: pytest prompt_tuning_framework/tests/test_metrics_verification.py -v
 
   secrets-scan:
     name: Quét lộ khoá

@@ -89,7 +89,7 @@ train 100 = test 100, nên không học thuộc.
 test chỉ 66.7. Nếu không tách, tôi đã báo cáo con số cao hơn sự thật 16.6 điểm.
 
 ```bash
-python -m pytest prompt_tuning_framework/tests/test_tach_tap_test.py -v -k "khong_bao_gio_thay or hoc_thuoc"
+python -m pytest prompt_tuning_framework/tests/test_train_test_split.py -v -k "never_sees or overfitting"
 ```
 
 Có test khoá chặt bất biến "optimizer không bao giờ thấy tập test", và test chứng
@@ -104,10 +104,10 @@ bại. Quy định ẩn là "khách **trả tiền** VÀ bị chặn hoàn toàn
 lẻ chỉ đạt 83.3 điểm, chỉ hiểu đúng **sự kết hợp** mới đạt 100.
 
 ```bash
-python -m pytest prompt_tuning_framework/tests/test_bo_mau.py -v
+python -m pytest prompt_tuning_framework/tests/test_dataset.py -v
 ```
 
-Quan trọng nhất là `test_giong_dieu_vo_dung_de_doan`: ticket gào "URGENT!!!" rải
+Quan trọng nhất là `test_tone_is_useless_for_guessing`: ticket gào "URGENT!!!" rải
 đều **cả Yes lẫn No** (`P(Yes | gào to) = 50%`). Bộ mẫu đầu tiên tôi làm có
 khiếm khuyết đúng chỗ này — 15/15 ticket gào to đều là No, nên model chỉ cần học
 "gào to → No" là xong, và benchmark đang đo **giọng điệu** chứ không đo quy định.
@@ -121,7 +121,7 @@ khiếm khuyết đúng chỗ này — 15/15 ticket gào to đều là No, nên 
 
 ```bash
 pip install -e "prompt_tuning_framework/[test,verify]"
-python -m pytest prompt_tuning_framework/tests/test_do_luong_dung_khong.py -v
+python -m pytest prompt_tuning_framework/tests/test_metrics_verification.py -v
 ```
 
 | Tầng | Cách | Bắt lỗi gì |
@@ -161,7 +161,7 @@ kén model hơn* prompt gốc, dù chỉ được tinh chỉnh trên một model
 phải prompt dùng chung được. Lấy min buộc phải sửa cho model yếu nhất.
 
 ```bash
-python -m pytest prompt_tuning_framework/tests/test_do_luong.py -v -k cross_model
+python -m pytest prompt_tuning_framework/tests/test_metrics.py -v -k cross_model
 ```
 
 Có test khoá cả một chi tiết tinh tế: mẫu số của khoảng tin cậy là **số mẫu**,

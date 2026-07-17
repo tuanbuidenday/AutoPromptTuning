@@ -14,7 +14,7 @@ Bộ mẫu (examples/tickets.csv, sinh bởi make_tickets.py): 480 ca, cân bằ
 / 240 No, chia 280 train / 200 test. Thiết kế giai thừa giọng-điệu × trả-tiền ×
 bị-chặn để mọi LUẬT LƯỜI đều thất bại — giọng điệu chỉ đạt 50 điểm (bằng tung
 đồng xu), mỗi dấu hiệu đơn lẻ 83.3 điểm. Chỉ hiểu đúng sự KẾT HỢP mới đạt 100.
-test_bo_mau.py canh giữ điều này.
+test_dataset.py canh giữ điều này.
 
 Ví dụ này TÁCH train/test. Optimizer chỉ nhìn thấy tập train; điểm công bố lấy từ
 tập test mà nó chưa từng thấy. Không tách thì điểm cao chỉ là điểm học thuộc:

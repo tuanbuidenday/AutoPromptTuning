@@ -20,7 +20,7 @@ from prompt_tuning_framework.components.optimizers.autoprompt_optimizer import \
 from prompt_tuning_framework.core.registry import available, get
 
 
-class ChainGia:
+class FakeChain:
     """Giả ChainWrapper của AutoPrompt: ghi lại input, trả về thứ được cài sẵn."""
 
     def __init__(self, tra_ve):
@@ -34,7 +34,7 @@ class ChainGia:
 
 def _adapter(tra_ve, provider="google", max_errors=4, labels=("Yes", "No")):
     o = object.__new__(AutoPromptOptimizer)
-    o.chain = ChainGia(tra_ve)
+    o.chain = FakeChain(tra_ve)
     o.labels = list(labels)
     o.max_errors = max_errors
     o._provider = provider
@@ -42,7 +42,7 @@ def _adapter(tra_ve, provider="google", max_errors=4, labels=("Yes", "No")):
     return o
 
 
-def _kq(score=50.0, n_loi=2):
+def _result(score=50.0, n_loi=2):
     results = [
         SampleResult(sample=Sample(id=i, text=f"ticket {i}", label="Yes"),
                      predicted="No", expected="Yes", correct=False)
@@ -52,101 +52,101 @@ def _kq(score=50.0, n_loi=2):
 
 
 # ---------- đăng ký plugin ----------------------------------------------
-def test_da_dang_ky_vao_registry():
+def test_registered_in_registry():
     """Luận điểm 'AutoPrompt chỉ là một plugin' nằm ở đúng dòng này."""
     assert "autoprompt" in available("optimizer")
     assert get("optimizer", "autoprompt") is AutoPromptOptimizer
 
 
-def test_ngang_hang_voi_optimizer_nha():
+def test_peer_of_builtin_optimizer():
     """Nó phải đứng ngang hàng llm_rewrite, không phải trường hợp đặc biệt."""
     assert {"autoprompt", "llm_rewrite"} <= set(available("optimizer"))
 
 
 # ---------- quirk của Gemini: tool-call trả về list ----------------------
-def test_boc_tool_call_dang_list_cua_gemini():
+def test_unwraps_gemini_list_tool_call():
     """Gemini trả [{'args': {...}}] chứ không trả thẳng dict."""
     o = _adapter([{"args": {"prompt": "prompt moi"}}])
-    assert o.propose("cu", _kq()) == "prompt moi"
+    assert o.propose("cu", _result()) == "prompt moi"
 
 
-def test_provider_khac_khong_boc_list():
+def test_other_provider_does_not_unwrap_list():
     """Chỉ google mới có quirk này; bóc nhầm ở provider khác là sai."""
     o = _adapter({"prompt": "prompt moi"}, provider="openai")
-    assert o.propose("cu", _kq()) == "prompt moi"
+    assert o.propose("cu", _result()) == "prompt moi"
 
 
-def test_google_van_nhan_dict_thuong():
+def test_google_still_accepts_plain_dict():
     o = _adapter({"prompt": "prompt moi"})
-    assert o.propose("cu", _kq()) == "prompt moi"
+    assert o.propose("cu", _result()) == "prompt moi"
 
 
-def test_list_nhieu_phan_tu_thi_khong_boc():
+def test_multi_element_list_not_unwrapped():
     o = _adapter([{"args": {"prompt": "a"}}, {"args": {"prompt": "b"}}])
-    assert o.propose("cu", _kq()) == ""
+    assert o.propose("cu", _result()) == ""
 
 
 # ---------- ChainWrapper nuốt lỗi và trả None ---------------------------
-def test_chain_tra_none_thi_tra_chuoi_rong():
+def test_chain_returning_none_gives_empty_string():
     """utils/llm_chain.py:67 nuốt MỌI exception rồi trả None.
 
     Adapter phải trả "" để tuner dừng gọn, thay vì nổ TypeError như chính
     AutoPrompt gốc vẫn nổ ('NoneType' object is not subscriptable).
     """
     o = _adapter(None)
-    assert o.propose("cu", _kq()) == ""
+    assert o.propose("cu", _result()) == ""
 
 
-def test_thieu_khoa_prompt_thi_tra_chuoi_rong():
+def test_missing_prompt_key_gives_empty_string():
     o = _adapter({"khong_phai_prompt": "x"})
-    assert o.propose("cu", _kq()) == ""
+    assert o.propose("cu", _result()) == ""
 
 
-def test_list_rong_thi_tra_chuoi_rong():
+def test_empty_list_gives_empty_string():
     o = _adapter([])
-    assert o.propose("cu", _kq()) == ""
+    assert o.propose("cu", _result()) == ""
 
 
-def test_cat_khoang_trang_thua():
+def test_strips_surrounding_whitespace():
     o = _adapter({"prompt": "  co khoang trang  \n"})
-    assert o.propose("cu", _kq()) == "co khoang trang"
+    assert o.propose("cu", _result()) == "co khoang trang"
 
 
 # ---------- nội dung gửi cho meta-chain ---------------------------------
-def test_gui_du_4_truong_autoprompt_yeu_cau():
+def test_sends_all_4_fields_autoprompt_requires():
     o = _adapter({"prompt": "x"})
-    o.propose("cu", _kq(), task_description="Phan loai ticket")
+    o.propose("cu", _result(), task_description="Phan loai ticket")
     nhan = o.chain.da_nhan
     assert set(nhan) == {"task_description", "history", "error_analysis", "labels"}
     assert nhan["task_description"] == "Phan loai ticket"
     assert json.loads(nhan["labels"]) == ["Yes", "No"]
 
 
-def test_khong_co_task_description_thi_van_chay():
+def test_runs_without_task_description():
     o = _adapter({"prompt": "x"})
-    o.propose("cu", _kq())
+    o.propose("cu", _result())
     assert o.chain.da_nhan["task_description"] == "(not provided)"
 
 
-def test_error_analysis_chua_ca_sai():
+def test_error_analysis_includes_failed_samples():
     o = _adapter({"prompt": "x"})
-    o.propose("cu", _kq(score=42.0, n_loi=2))
+    o.propose("cu", _result(score=42.0, n_loi=2))
     ea = o.chain.da_nhan["error_analysis"]
     assert "42.0/100" in ea
     assert "ticket 0" in ea and "ticket 1" in ea
     assert "Predicted: No" in ea and "Correct: Yes" in ea
 
 
-def test_error_analysis_ton_trong_max_errors():
+def test_error_analysis_respects_max_errors():
     """Nhồi hết lỗi vào meta-prompt sẽ phình token và tốn tiền vô ích."""
     o = _adapter({"prompt": "x"}, max_errors=2)
-    o.propose("cu", _kq(n_loi=10))
+    o.propose("cu", _result(n_loi=10))
     ea = o.chain.da_nhan["error_analysis"]
     assert "ticket 1" in ea
     assert "ticket 2" not in ea
 
 
-def test_khong_co_ca_sai_thi_van_de_xuat_duoc():
+def test_proposes_even_with_no_failures():
     """Prompt đã đúng hết vẫn phải có đường đi tiếp, không được gửi rỗng."""
     o = _adapter({"prompt": "x"})
     o.propose("cu", EvalResult(score=100.0, results=[]))
@@ -154,42 +154,42 @@ def test_khong_co_ca_sai_thi_van_de_xuat_duoc():
 
 
 # ---------- lịch sử ------------------------------------------------------
-def test_history_dung_dinh_dang_cua_autoprompt():
+def test_history_uses_autoprompt_format():
     o = _adapter({"prompt": "x"})
     lich_su = [PromptVersion(version=0, text="p0", score=50.0),
                PromptVersion(version=1, text="p1", score=70.0)]
-    o.propose("cu", _kq(), history=lich_su)
+    o.propose("cu", _result(), history=lich_su)
     h = o.chain.da_nhan["history"]
     assert "##Prompt Score: 50.00" in h and "##Prompt Score: 70.00" in h
     assert "p0" in h and "p1" in h
 
 
-def test_history_bo_qua_ban_chua_cham_diem():
+def test_history_skips_unscored_versions():
     o = _adapter({"prompt": "x"})
     lich_su = [PromptVersion(version=0, text="da cham", score=50.0),
                PromptVersion(version=1, text="chua cham", score=None)]
-    o.propose("cu", _kq(), history=lich_su)
+    o.propose("cu", _result(), history=lich_su)
     assert "chua cham" not in o.chain.da_nhan["history"]
 
 
-def test_history_chi_lay_4_ban_gan_nhat():
+def test_history_keeps_only_4_most_recent():
     o = _adapter({"prompt": "x"})
     lich_su = [PromptVersion(version=i, text=f"p{i}", score=float(i))
                for i in range(6)]
-    o.propose("cu", _kq(), history=lich_su)
+    o.propose("cu", _result(), history=lich_su)
     h = o.chain.da_nhan["history"]
     assert "p0" not in h and "p1" not in h
     assert "p5" in h
 
 
-def test_khong_co_history_thi_ghi_none():
+def test_no_history_writes_none():
     o = _adapter({"prompt": "x"})
-    o.propose("cu", _kq())
+    o.propose("cu", _result())
     assert o.chain.da_nhan["history"] == "(none)"
 
 
 # ---------- tích hợp: dựng thật, cần deps của AutoPrompt ----------------
-def test_dung_that_duoc_khi_co_deps():
+def test_works_for_real_when_deps_installed():
     """Kiểm chứng __init__ thật: EasyDict, đọc file meta-prompt, dựng ChainWrapper.
 
     Bỏ qua nếu thiếu easydict/langchain (CI chỉ cài extras [test]) hoặc thiếu API

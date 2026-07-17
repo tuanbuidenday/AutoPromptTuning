@@ -20,7 +20,7 @@ def _samples(n=12):
             for i in range(n)]
 
 
-class ExecutorLoiMang(BaseExecutor):
+class FlakyNetworkExecutor(BaseExecutor):
     """Đoán bừa 'Yes'; `n_loi` ca đầu trả về lỗi giống hệt quota 429."""
 
     def __init__(self, n_loi):
@@ -34,14 +34,14 @@ class ExecutorLoiMang(BaseExecutor):
         ]
 
 
-class OptimizerIm(BaseOptimizer):
+class SilentOptimizer(BaseOptimizer):
     def propose(self, prompt, result, task_description="", history=None):
         return prompt + " v2"
 
 
 # ---------------- Evaluator ----------------
 
-def test_khong_loi_thi_cham_het_va_diem_dung():
+def test_no_errors_scores_everything_correctly():
     preds = [Prediction(sample_id=i, output="Yes") for i in range(12)]
     r = AccuracyEvaluator().evaluate("p", preds, _samples())
     assert r.score == 50.0          # 6/12 đúng
@@ -49,7 +49,7 @@ def test_khong_loi_thi_cham_het_va_diem_dung():
     assert r.reliable is True
 
 
-def test_qua_nhieu_ca_loi_thi_danh_dau_khong_dang_tin():
+def test_too_many_errors_marks_result_unreliable():
     """Đúng kịch bản đã xảy ra: 9/12 ca lỗi, 3 ca đúng -> điểm 100 nhưng phải cờ đỏ."""
     preds = [Prediction(sample_id=i,
                         output="Yes" if i < 3 else "__ERROR__: 429 quota")
@@ -60,7 +60,7 @@ def test_qua_nhieu_ca_loi_thi_danh_dau_khong_dang_tin():
     assert r.reliable is False, "phải bị đánh dấu KHÔNG đáng tin"
 
 
-def test_it_ca_loi_van_con_dang_tin():
+def test_few_errors_stays_reliable():
     """1/12 ca lỗi (>= 80% chấm được) -> vẫn tin được."""
     preds = [Prediction(sample_id=i, output="__ERROR__: x" if i == 0 else "Yes")
              for i in range(12)]
@@ -69,7 +69,7 @@ def test_it_ca_loi_van_con_dang_tin():
     assert r.reliable is True
 
 
-def test_nguong_min_scored_ratio_chinh_duoc():
+def test_min_scored_ratio_threshold_is_configurable():
     preds = [Prediction(sample_id=i, output="__ERROR__: x" if i < 5 else "Yes")
              for i in range(12)]
     samples = _samples()
@@ -77,7 +77,7 @@ def test_nguong_min_scored_ratio_chinh_duoc():
     assert AccuracyEvaluator(min_scored_ratio=0.5).evaluate("p", preds, samples).reliable is True
 
 
-def test_tat_ca_deu_loi_thi_diem_0_va_khong_dang_tin():
+def test_all_errored_scores_0_and_is_unreliable():
     preds = [Prediction(sample_id=i, output="__ERROR__: x") for i in range(12)]
     r = AccuracyEvaluator().evaluate("p", preds, _samples())
     assert r.score == 0.0 and r.num_scored == 0
@@ -86,12 +86,12 @@ def test_tat_ca_deu_loi_thi_diem_0_va_khong_dang_tin():
 
 # ---------------- Tuner ----------------
 
-def test_tuner_khong_ghi_diem_thoi_phong():
+def test_tuner_does_not_record_an_inflated_score():
     """Điểm 100 giả KHÔNG được lưu vào store, nên không thể thành 'tốt nhất'."""
     tuner = PromptTuner(
-        executor=ExecutorLoiMang(n_loi=9),
+        executor=FlakyNetworkExecutor(n_loi=9),
         evaluator=AccuracyEvaluator(),
-        optimizer=OptimizerIm(),
+        optimizer=SilentOptimizer(),
         max_iters=3,
         target_score=100.0,
     )
@@ -102,12 +102,12 @@ def test_tuner_khong_ghi_diem_thoi_phong():
     assert best is None, "không được tuyên bố có prompt tốt nhất từ số liệu rác"
 
 
-def test_tuner_khong_dung_som_vi_diem_gia():
+def test_tuner_does_not_stop_early_on_a_fake_score():
     """Điểm 100 giả không được kích hoạt target_score như một chiến thắng."""
     tuner = PromptTuner(
-        executor=ExecutorLoiMang(n_loi=9),
+        executor=FlakyNetworkExecutor(n_loi=9),
         evaluator=AccuracyEvaluator(),
-        optimizer=OptimizerIm(),
+        optimizer=SilentOptimizer(),
         max_iters=3,
         target_score=100.0,
     )
@@ -117,11 +117,11 @@ def test_tuner_khong_dung_som_vi_diem_gia():
     assert len(tuner.store.history()) == 1
 
 
-def test_tuner_bao_loi_ro_rang(caplog):
+def test_tuner_errors_clearly(caplog):
     tuner = PromptTuner(
-        executor=ExecutorLoiMang(n_loi=9),
+        executor=FlakyNetworkExecutor(n_loi=9),
         evaluator=AccuracyEvaluator(),
-        optimizer=OptimizerIm(),
+        optimizer=SilentOptimizer(),
         max_iters=2,
     )
     with caplog.at_level("ERROR"):
@@ -130,12 +130,12 @@ def test_tuner_bao_loi_ro_rang(caplog):
     assert "3/12" in caplog.text
 
 
-def test_tuner_van_chay_binh_thuong_khi_khong_co_loi():
+def test_tuner_runs_normally_when_there_are_no_errors():
     """Không được làm hỏng luồng bình thường."""
     tuner = PromptTuner(
-        executor=ExecutorLoiMang(n_loi=0),
+        executor=FlakyNetworkExecutor(n_loi=0),
         evaluator=AccuracyEvaluator(),
-        optimizer=OptimizerIm(),
+        optimizer=SilentOptimizer(),
         max_iters=2,
     )
     best = tuner.run("prompt do", _samples())

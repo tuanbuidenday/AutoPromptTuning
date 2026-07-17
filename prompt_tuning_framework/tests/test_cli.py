@@ -53,13 +53,13 @@ def config(tmp_path):
     return str(p)
 
 
-def test_lenh_plugins(capsys):
+def test_plugins_command(capsys):
     assert main(["plugins"]) == 0
     out = capsys.readouterr().out
     assert "optimizer" in out and "llm_rewrite" in out
 
 
-def test_lenh_run_toi_uu_va_in_bao_cao(dataset, config, capsys):
+def test_run_command_optimizes_and_prints_report(dataset, config, capsys):
     rc = main(["run", "--dataset", dataset, "--prompt", "Is this a dog? Yes or No",
                "--config", config])
     out = capsys.readouterr().out
@@ -73,19 +73,19 @@ def test_lenh_run_toi_uu_va_in_bao_cao(dataset, config, capsys):
     assert "100.0/100" in out             # tối ưu thành công
 
 
-def test_run_ghi_de_max_iters_tu_cli(dataset, config, capsys):
+def test_run_overrides_max_iters_from_cli(dataset, config, capsys):
     main(["run", "--dataset", dataset, "--prompt", "vague prompt",
           "--config", config, "--max-iters", "1"])
     out = capsys.readouterr().out
     assert "tối đa 1 vòng" in out
 
 
-def test_run_dataset_khong_ton_tai_bao_loi(config, capsys):
+def test_run_missing_dataset_errors(config, capsys):
     rc = main(["run", "--dataset", "/khong/co.csv", "--prompt", "p", "--config", config])
     assert rc == 2
     assert "Lỗi:" in capsys.readouterr().err
 
 
-def test_thieu_tham_so_bat_buoc_thi_thoat(dataset):
+def test_missing_required_arg_exits(dataset):
     with pytest.raises(SystemExit):
         main(["run", "--dataset", dataset])  # thiếu --prompt

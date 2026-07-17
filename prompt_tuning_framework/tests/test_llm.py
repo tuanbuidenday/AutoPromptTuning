@@ -11,7 +11,7 @@ from prompt_tuning_framework.llm import DEFAULT_MODELS, default_model, resolve_a
 
 
 @pytest.fixture
-def bat_build_llm(monkeypatch):
+def patch_build_llm(monkeypatch):
     """Chặn build_llm, ghi lại tham số thay vì gọi API thật."""
     captured = {}
 
@@ -26,68 +26,68 @@ def bat_build_llm(monkeypatch):
 
 # ---------------- Model mặc định theo provider ----------------
 
-def test_default_model_cua_google():
+def test_google_default_model():
     assert default_model("google", "executor") == "gemini-3.1-flash-lite"
     assert default_model("google", "optimizer") == "gemini-3.5-flash"
 
 
-def test_default_model_cua_openai_la_ban_re():
+def test_openai_default_model_is_the_cheap_one():
     assert default_model("openai", "executor") == "gpt-4o-mini"
     assert default_model("openai", "optimizer") == "gpt-4o-mini"
 
 
-def test_default_model_khong_phan_biet_hoa_thuong():
+def test_default_model_lookup_is_case_insensitive():
     assert default_model("OpenAI", "executor") == default_model("openai", "executor")
 
 
 @pytest.mark.parametrize("provider,cam", [("openai", "gemini"), ("google", "gpt")])
-def test_model_mac_dinh_khong_lan_sang_provider_khac(provider, cam):
+def test_default_model_does_not_bleed_across_providers(provider, cam):
     """Chốt chặn bug: đổi provider mà model mặc định vẫn của hãng kia."""
     for role in ("executor", "optimizer"):
         assert cam not in default_model(provider, role).lower()
 
 
-def test_moi_provider_deu_co_du_2_vai():
+def test_every_provider_has_both_roles():
     for provider, roles in DEFAULT_MODELS.items():
         assert set(roles) == {"executor", "optimizer"}, provider
 
 
-def test_provider_la_bao_loi_ro_rang():
+def test_unknown_provider_errors_clearly():
     with pytest.raises(ValueError, match="Provider hỗ trợ"):
         default_model("anthropic", "executor")
 
 
 # ---------------- Component phải bám theo provider ----------------
 
-def test_executor_openai_khong_gui_model_gemini(bat_build_llm):
+def test_openai_executor_does_not_send_gemini_model(patch_build_llm):
     """Trước đây LLMExecutor(provider='openai') vẫn gửi gemini-2.5-flash-lite."""
     ex = llm_executor.LLMExecutor(provider="openai", labels=["Yes", "No"])
-    assert bat_build_llm["model"] == "gpt-4o-mini"
+    assert patch_build_llm["model"] == "gpt-4o-mini"
     assert ex.model == "gpt-4o-mini"
 
 
-def test_optimizer_openai_khong_gui_model_gemini(bat_build_llm):
+def test_openai_optimizer_does_not_send_gemini_model(patch_build_llm):
     opt = llm_rewrite_optimizer.LLMRewriteOptimizer(provider="openai", labels=["Yes", "No"])
-    assert bat_build_llm["model"] == "gpt-4o-mini"
+    assert patch_build_llm["model"] == "gpt-4o-mini"
     assert opt.model == "gpt-4o-mini"
 
 
-def test_executor_mac_dinh_van_la_google(bat_build_llm):
+def test_executor_still_defaults_to_google(patch_build_llm):
     llm_executor.LLMExecutor(labels=["Yes", "No"])
-    assert bat_build_llm["provider"] == "google"
-    assert bat_build_llm["model"] == "gemini-3.1-flash-lite"
+    assert patch_build_llm["provider"] == "google"
+    assert patch_build_llm["model"] == "gemini-3.1-flash-lite"
 
 
-def test_model_truyen_tay_duoc_uu_tien(bat_build_llm):
+def test_explicit_model_takes_precedence(patch_build_llm):
     llm_executor.LLMExecutor(provider="openai", model="gpt-4o", labels=["Yes"])
-    assert bat_build_llm["model"] == "gpt-4o"
+    assert patch_build_llm["model"] == "gpt-4o"
 
 
 # ---------------- Thứ tự tìm API key ----------------
 # Ưu tiên: tham số -> biến môi trường -> llm_env.local.yml -> llm_env.yml
 
 @pytest.fixture
-def env_sach(monkeypatch, tmp_path):
+def clean_env(monkeypatch, tmp_path):
     """Cô lập khỏi biến môi trường và file llm_env* THẬT trên máy.
 
     Không có fixture này, test sẽ đọc nhầm khoá thật của lập trình viên và
@@ -100,71 +100,71 @@ def env_sach(monkeypatch, tmp_path):
     return tmp_path
 
 
-def _viet_env(path, key):
+def _write_env(path, key):
     path.write_text(f"openai:\n    OPENAI_API_KEY: '{key}'\n", encoding="utf-8")
     return path
 
 
-def test_api_key_uu_tien_tham_so_cao_nhat(env_sach, monkeypatch):
+def test_api_key_argument_has_highest_precedence(clean_env, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-tu-env")
     assert resolve_api_key("openai", "sk-tu-tham-so") == "sk-tu-tham-so"
 
 
-def test_api_key_doc_tu_bien_moi_truong(env_sach, monkeypatch):
+def test_api_key_read_from_env_var(clean_env, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-tu-env")
     assert resolve_api_key("openai") == "sk-tu-env"
 
 
-def test_api_key_doc_tu_llm_env_yml(env_sach, monkeypatch):
-    monkeypatch.setattr(llm, "_LLM_ENV", _viet_env(env_sach / "a.yml", "sk-tu-file"))
+def test_api_key_read_from_llm_env_yml(clean_env, monkeypatch):
+    monkeypatch.setattr(llm, "_LLM_ENV", _write_env(clean_env / "a.yml", "sk-tu-file"))
     assert llm.resolve_api_key("openai") == "sk-tu-file"
 
 
-def test_api_key_doc_tu_file_local(env_sach, monkeypatch):
+def test_api_key_read_from_local_file(clean_env, monkeypatch):
     """Khoá thật sống ở llm_env.local.yml (đã gitignore)."""
     monkeypatch.setattr(llm, "_LLM_ENV_LOCAL",
-                        _viet_env(env_sach / "b.yml", "sk-tu-local"))
+                        _write_env(clean_env / "b.yml", "sk-tu-local"))
     assert llm.resolve_api_key("openai") == "sk-tu-local"
 
 
-def test_file_local_uu_tien_hon_llm_env_yml(env_sach, monkeypatch):
+def test_local_file_beats_llm_env_yml(clean_env, monkeypatch):
     """llm_env.yml trong Git chỉ là template rỗng -> .local phải thắng."""
-    monkeypatch.setattr(llm, "_LLM_ENV", _viet_env(env_sach / "a.yml", "sk-template"))
-    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _viet_env(env_sach / "b.yml", "sk-that"))
+    monkeypatch.setattr(llm, "_LLM_ENV", _write_env(clean_env / "a.yml", "sk-template"))
+    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _write_env(clean_env / "b.yml", "sk-that"))
     assert llm.resolve_api_key("openai") == "sk-that"
 
 
-def test_bien_moi_truong_uu_tien_hon_moi_file(env_sach, monkeypatch):
-    monkeypatch.setattr(llm, "_LLM_ENV", _viet_env(env_sach / "a.yml", "sk-template"))
-    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _viet_env(env_sach / "b.yml", "sk-that"))
+def test_env_var_beats_every_file(clean_env, monkeypatch):
+    monkeypatch.setattr(llm, "_LLM_ENV", _write_env(clean_env / "a.yml", "sk-template"))
+    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _write_env(clean_env / "b.yml", "sk-that"))
     monkeypatch.setenv("OPENAI_API_KEY", "sk-tu-env")
     assert llm.resolve_api_key("openai") == "sk-tu-env"
 
 
-def test_khong_co_key_o_dau_thi_tra_none(env_sach):
+def test_no_key_anywhere_returns_none(clean_env):
     assert llm.resolve_api_key("openai") is None
 
 
-def test_key_rong_trong_file_coi_nhu_khong_co(env_sach, monkeypatch):
+def test_empty_key_in_file_treated_as_absent(clean_env, monkeypatch):
     """llm_env.yml trong Git có sẵn slot rỗng -> không được trả về chuỗi rỗng."""
-    monkeypatch.setattr(llm, "_LLM_ENV", _viet_env(env_sach / "a.yml", ""))
+    monkeypatch.setattr(llm, "_LLM_ENV", _write_env(clean_env / "a.yml", ""))
     assert llm.resolve_api_key("openai") is None
 
 
-def test_local_rong_thi_lui_ve_llm_env_yml(env_sach, monkeypatch):
-    monkeypatch.setattr(llm, "_LLM_ENV", _viet_env(env_sach / "a.yml", "sk-template"))
-    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _viet_env(env_sach / "b.yml", ""))
+def test_empty_local_falls_back_to_llm_env_yml(clean_env, monkeypatch):
+    monkeypatch.setattr(llm, "_LLM_ENV", _write_env(clean_env / "a.yml", "sk-template"))
+    monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", _write_env(clean_env / "b.yml", ""))
     assert llm.resolve_api_key("openai") == "sk-template"
 
 
-def test_file_yaml_hong_khong_lam_sap(env_sach, monkeypatch):
+def test_corrupt_yaml_does_not_crash(clean_env, monkeypatch):
     """File YAML lỗi cú pháp -> trả None, không ném exception ra ngoài."""
-    xau = env_sach / "hong.yml"
+    xau = clean_env / "hong.yml"
     xau.write_text("openai: [khong dong ngoac\n", encoding="utf-8")
     monkeypatch.setattr(llm, "_LLM_ENV_LOCAL", xau)
     assert llm.resolve_api_key("openai") is None
 
 
-def test_build_llm_bao_loi_voi_provider_la():
+def test_build_llm_errors_on_unknown_provider():
     with pytest.raises(ValueError):
         llm.build_llm(provider="cohere", model="x")

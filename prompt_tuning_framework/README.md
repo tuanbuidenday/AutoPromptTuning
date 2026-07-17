@@ -216,7 +216,7 @@ bố thắng lợi trên rác.
 
 Đừng tin. Phần thống kê do chính tác giả framework tự viết, và tự kiểm chứng công
 thức bằng chính công thức đó là vô giá trị — hiểu sai từ đầu thì cả hai lần đều
-sai giống hệt nhau. [`tests/test_do_luong_dung_khong.py`](tests/test_do_luong_dung_khong.py)
+sai giống hệt nhau. [`tests/test_metrics_verification.py`](tests/test_metrics_verification.py)
 kiểm chứng bằng **ba tầng độc lập**, và CI chạy lại mỗi lần push:
 
 | Tầng | Cách làm | Bắt được lỗi gì |
@@ -236,7 +236,7 @@ Clopper-Pearson tự viết (dò nhị phân trên CDF nhị thức) khớp bả
 
 ```bash
 pip install -e "prompt_tuning_framework/[test,verify]"
-pytest prompt_tuning_framework/tests/test_do_luong_dung_khong.py -v
+pytest prompt_tuning_framework/tests/test_metrics_verification.py -v
 ```
 
 `statsmodels` **không phải** dependency của framework — `core/stats.py` chỉ dùng
@@ -343,7 +343,7 @@ không đủ:
 
 Ticket gào to rải đều cả hai nhãn (`P(Yes | gào to) = 50.0%`). Điều này quan
 trọng: nếu chỉ ticket No mới gào to thì model chỉ cần học "gào to → No", và
-benchmark sẽ đo **giọng điệu** thay vì đo quy định. `tests/test_bo_mau.py` canh
+benchmark sẽ đo **giọng điệu** thay vì đo quy định. `tests/test_dataset.py` canh
 giữ toàn bộ các tính chất này.
 
 Cỡ tập test = 200 không tuỳ tiện — đó là cỡ nhỏ nhất đủ cho mục tiêu "rút ngắn
@@ -365,7 +365,7 @@ Ba file, mở ra xem trực tiếp được:
 | [`examples/tickets_test.csv`](examples/tickets_test.csv) | **200 ca — giữ riêng, optimizer KHÔNG bao giờ thấy** |
 
 Code lúc chạy vẫn gọi `split_samples` chứ không đọc hai file đã chia; chúng chỉ để
-người đọc kiểm tra. `tests/test_bo_mau.py` canh cho chúng luôn khớp chính xác thứ
+người đọc kiểm tra. `tests/test_dataset.py` canh cho chúng luôn khớp chính xác thứ
 `split_samples` sinh ra — nếu không, khi bộ mẫu đổi mà quên sinh lại, chúng sẽ âm
 thầm thành **dữ liệu ma**: mở ra đọc được, trông đúng, nhưng không phải tập test
 thật đã tạo ra con số trong báo cáo.

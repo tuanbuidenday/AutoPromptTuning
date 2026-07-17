@@ -27,7 +27,7 @@ kết luận được ở mức 7 điểm. Phần train dư ra không giúp opti
 (nó chỉ đọc max_errors=5 ca sai mỗi vòng) nhưng làm điểm dev ổn định hơn và cho
 nó một rổ lỗi đa dạng hơn để chọn.
 
-Hệ quả (test_bo_mau.py canh giữ):
+Hệ quả (test_dataset.py canh giữ):
     - giọng điệu: P(Yes | gào) ≈ P(Yes | bình tĩnh) ≈ 50%  -> vô dụng để đoán
     - "trả tiền" một mình  -> ~75%, chưa đủ
     - "bị chặn" một mình   -> ~75%, chưa đủ
@@ -217,7 +217,7 @@ def main():
 
     # Xuất luôn tập train/test đã chia. Về kỹ thuật thì seed cố định là đủ để tái
     # tạo, nhưng người đọc báo cáo cần MỞ RA XEM được tập test mà không phải chạy
-    # code. tests/test_bo_mau.py canh cho hai file này luôn khớp split_samples,
+    # code. tests/test_dataset.py canh cho hai file này luôn khớp split_samples,
     # nếu không chúng sẽ âm thầm thành dữ liệu ma khi bộ mẫu đổi.
     from ..data import load_samples_csv, split_samples
 

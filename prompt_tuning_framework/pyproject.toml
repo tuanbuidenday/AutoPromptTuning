@@ -26,7 +26,7 @@ test = ["pytest>=7.0"]
 # Đối chiếu phần thống kê với một cài đặt độc lập, được giới nghiên cứu dùng lâu
 # năm. Không phải dependency của framework — core/stats.py chỉ dùng thư viện
 # chuẩn. Chỉ cần khi muốn CHỨNG MINH phép đo đúng, xem
-# tests/test_do_luong_dung_khong.py
+# tests/test_metrics_verification.py
 verify = ["statsmodels>=0.14", "scipy>=1.10", "numpy>=1.24"]
 all = [
     "langchain-google-genai>=1.0",

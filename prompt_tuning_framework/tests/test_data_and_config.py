@@ -24,29 +24,29 @@ def test_load_csv(tmp_path):
     assert [x.id for x in s] == [0, 1]
 
 
-def test_load_csv_chap_nhan_cot_annotation(tmp_path):
+def test_load_csv_accepts_annotation_column(tmp_path):
     """Định dạng dump của AutoPrompt dùng cột 'annotation'."""
     s = load_samples_csv(_write(tmp_path, "text,annotation\nabc,Yes\n"))
     assert s[0].label == "Yes"
 
 
-def test_load_csv_bo_qua_dong_rong(tmp_path):
+def test_load_csv_skips_blank_rows(tmp_path):
     s = load_samples_csv(_write(tmp_path, "text,label\nabc,Yes\n,No\n"))
     assert len(s) == 1
 
 
-def test_load_csv_thieu_cot_text_bao_loi(tmp_path):
+def test_load_csv_missing_text_column_errors(tmp_path):
     with pytest.raises(ValueError, match="Thiếu cột"):
         load_samples_csv(_write(tmp_path, "noidung,label\nabc,Yes\n"))
 
 
-def test_load_csv_khong_thay_file():
+def test_load_csv_file_not_found():
     with pytest.raises(FileNotFoundError):
         load_samples_csv("/khong/ton/tai.csv")
 
 
 # ---------- config-driven ----------
-def test_tuner_from_config_dung_dung_component(tmp_path):
+def test_tuner_from_config_builds_right_components(tmp_path):
     cfg = {
         "task_description": "phan loai",
         "max_iters": 7,
@@ -77,12 +77,12 @@ def test_tuner_from_config_dung_dung_component(tmp_path):
     assert t.task_description == "phan loai"
 
 
-def test_config_thieu_name_bao_loi():
+def test_config_missing_name_errors():
     with pytest.raises(ValueError, match="Thiếu 'name'"):
         tuner_from_config({"executor": {"params": {}}})
 
 
-def test_config_khong_khai_store_thi_dung_memory():
+def test_config_without_store_defaults_to_memory():
     from prompt_tuning_framework import BaseExecutor, BaseOptimizer, register
 
     @register("executor", "e2")

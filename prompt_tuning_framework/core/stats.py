@@ -60,7 +60,7 @@ def clopper_pearson_interval(num_correct: int, num_total: int,
     Khi nào dùng thay Wilson: khi accuracy sát 0% hoặc 100%. Bao phủ của Wilson
     DAO ĐỘNG và tụt xuống ~92% ở vùng biên (đặc tính đã biết của phương pháp — đã
     kiểm chứng bằng mô phỏng rằng statsmodels cũng tụt y hệt, xem
-    tests/test_do_luong_dung_khong.py). Clopper-Pearson bảo đảm bao phủ >= 95% ở
+    tests/test_metrics_verification.py). Clopper-Pearson bảo đảm bao phủ >= 95% ở
     MỌI p, đổi lại khoảng rộng hơn một chút.
 
     Mặc định của framework vẫn là Wilson vì nó chặt hơn và là lựa chọn tiêu chuẩn;
