@@ -207,3 +207,40 @@ def test_works_for_real_when_deps_installed():
     # Tên model không được hardcode trong adapter — phải lấy từ llm.DEFAULT_MODELS.
     from prompt_tuning_framework.llm import default_model
     assert o.model == default_model("google", "optimizer")
+
+
+# ---------- thiếu repo AutoPrompt thì phải nói rõ ------------------------
+def test_missing_autoprompt_repo_says_how_to_fix(monkeypatch, tmp_path):
+    """Người cài bằng pip nhận được hướng dẫn, không phải "No module named 'utils'".
+
+    Plugin cần cả repo AutoPrompt trên đĩa, mà pip không cài được: AutoPrompt
+    không có trên PyPI. Người cài `pip install prompt-tuning-framework` sẽ có
+    _REPO_ROOT trỏ vào site-packages, nơi không hề có utils/llm_chain.py. Lỗi
+    trần không cho họ manh mối nào để tự thoát.
+    """
+    from prompt_tuning_framework.components.optimizers import autoprompt_optimizer as m
+    monkeypatch.setattr(m, "_REPO_ROOT", tmp_path)   # thư mục rỗng = không có repo
+
+    with pytest.raises(ModuleNotFoundError) as e:
+        m.AutoPromptOptimizer(labels=["Yes", "No"])
+
+    loi = str(e.value)
+    assert "git clone" in loi, "Phải chỉ ra cách lấy repo về"
+    assert "llm_rewrite" in loi, "Phải nêu lối thoát cho người không cần AutoPrompt"
+    assert str(tmp_path) in loi, "Phải nói rõ nó đang tìm ở đâu"
+
+
+def test_missing_repo_check_runs_before_importing_utils(monkeypatch, tmp_path):
+    """Kiểm tra repo phải chạy TRƯỚC import, nếu không thông báo tử tế vô dụng.
+
+    Nếu để `from utils.llm_chain import ...` chạy trước, Python ném
+    ModuleNotFoundError thô ngay tại đó và hướng dẫn không bao giờ tới tay ai.
+    """
+    from prompt_tuning_framework.components.optimizers import autoprompt_optimizer as m
+    monkeypatch.setattr(m, "_REPO_ROOT", tmp_path)
+
+    with pytest.raises(ModuleNotFoundError) as e:
+        m.AutoPromptOptimizer(labels=["Yes", "No"])
+    assert "No module named 'utils'" not in str(e.value), (
+        "Lỗi trần lọt ra ngoài — phần kiểm tra repo đang chạy sau import"
+    )

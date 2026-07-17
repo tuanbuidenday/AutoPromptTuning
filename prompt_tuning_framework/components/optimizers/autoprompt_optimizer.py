@@ -17,6 +17,20 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_META_FOLDER = "prompts/meta_prompts_classification"
 
+_HUONG_DAN = f"""Plugin 'autoprompt' cần mã nguồn repo AutoPrompt nằm trên đĩa,
+không phải chỉ vài gói pip: nó import `utils.llm_chain` và đọc file meta-prompt
+trực tiếp từ repo. pip không cài được thứ đó — AutoPrompt của Eladlev không có
+trên PyPI (gói tên 'autoprompt' trên PyPI là của tác giả khác, không liên quan).
+
+Đang tìm ở : {{thieu}}
+Cách sửa   : clone repo rồi chạy framework từ bên trong nó:
+    git clone https://github.com/Eladlev/AutoPrompt.git
+    cd AutoPrompt
+    pip install -e "prompt_tuning_framework/[autoprompt]"
+
+Không cần AutoPrompt thì dùng optimizer khác, không mất gì:
+    create('optimizer', 'llm_rewrite', labels=[...])"""
+
 
 @register("optimizer", "autoprompt")
 class AutoPromptOptimizer(BaseOptimizer):
@@ -37,7 +51,18 @@ class AutoPromptOptimizer(BaseOptimizer):
         if str(_REPO_ROOT) not in sys.path:
             sys.path.insert(0, str(_REPO_ROOT))
 
-        from easydict import EasyDict  # noqa: E402
+        # Kiểm tra trước khi import: lỗi trần chỉ nói "No module named 'utils'",
+        # không có cách nào đoán ra là thiếu cả một repo.
+        if not (_REPO_ROOT / "utils" / "llm_chain.py").is_file():
+            raise ModuleNotFoundError(_HUONG_DAN.format(thieu=_REPO_ROOT))
+
+        try:
+            from easydict import EasyDict  # noqa: E402
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "Thiếu easydict — plugin 'autoprompt' cần nó.\n"
+                "Cài bằng:  pip install 'prompt-tuning-framework[autoprompt]'"
+            ) from e
         from utils.llm_chain import ChainWrapper, get_chain_metadata  # noqa: E402
 
         self.labels = labels or []

@@ -2,6 +2,9 @@
 
 Chạy hoàn toàn offline — không gọi API thật (build_llm bị monkeypatch).
 """
+import builtins
+import sys
+
 import pytest
 
 from prompt_tuning_framework import llm
@@ -168,3 +171,45 @@ def test_corrupt_yaml_does_not_crash(clean_env, monkeypatch):
 def test_build_llm_errors_on_unknown_provider():
     with pytest.raises(ValueError):
         llm.build_llm(provider="cohere", model="x")
+
+
+# ---------- thiếu SDK provider thì phải nói cách cài ---------------------
+@pytest.mark.parametrize("provider,goi,extras", [
+    ("google", "langchain_google_genai", "google"),
+    ("openai", "langchain_openai", "openai"),
+])
+def test_missing_provider_sdk_says_how_to_install(provider, goi, extras, monkeypatch):
+    """Đổi "No module named 'langchain_openai'" thành lệnh cài được ngay."""
+    monkeypatch.setitem(sys.modules, goi, None)   # None -> import ném ImportError
+    real = builtins.__import__
+
+    def fake(name, *a, **k):
+        if name == goi:
+            raise ModuleNotFoundError(f"No module named '{goi}'", name=goi)
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", fake)
+    with pytest.raises(ModuleNotFoundError) as e:
+        llm.build_llm(provider=provider, model="x", api_key="k")
+    loi = str(e.value)
+    assert f"[{extras}]" in loi and "pip install" in loi, loi
+
+
+def test_unrelated_import_error_is_not_swallowed(monkeypatch):
+    """Chỉ đổi lời cho đúng gói đang thiếu.
+
+    Nếu bọc bừa, một ModuleNotFoundError của gói khác (lỗi thật trong máy người
+    dùng) sẽ bị dán nhãn "thiếu langchain-google-genai" và họ đi cài nhầm chỗ.
+    """
+    real = builtins.__import__
+
+    def fake(name, *a, **k):
+        if name == "langchain_google_genai":
+            raise ModuleNotFoundError("No module named 'grpc'", name="grpc")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", fake)
+    with pytest.raises(ModuleNotFoundError) as e:
+        llm.build_llm(provider="google", model="x", api_key="k")
+    assert "grpc" in str(e.value)
+    assert "pip install" not in str(e.value), "Lỗi của gói khác bị dán nhãn sai"

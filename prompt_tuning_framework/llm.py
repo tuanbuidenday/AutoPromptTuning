@@ -3,9 +3,11 @@
 Tách riêng để đổi provider (Google / OpenAI) mà không đụng vào component.
 """
 import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
+_DIST = "prompt-tuning-framework"
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 # llm_env.yml nằm trong Git nhưng chỉ là template toàn giá trị rỗng.
 # Khoá THẬT để ở llm_env.local.yml — đã .gitignore nên không thể lọt lên repo.
@@ -80,6 +82,26 @@ def resolve_api_key(provider: str, api_key: Optional[str] = None) -> Optional[st
     return None
 
 
+@contextmanager
+def _goi_y_cai_dat(extras: str, goi: str):
+    """Đổi ModuleNotFoundError thành thông báo có kèm lệnh sửa.
+
+    Lỗi trần chỉ nói "No module named 'langchain_google_genai'", không nói phải
+    làm gì. Người mới không có cách nào đoán ra tên extras để cài.
+    """
+    try:
+        yield
+    except ModuleNotFoundError as e:
+        if e.name and not e.name.startswith(goi.replace("-", "_")):
+            raise
+        raise ModuleNotFoundError(
+            f"Thiếu {goi} nên không dùng được provider {extras!r}.\n"
+            f"Cài bằng:  pip install '{_DIST}[{extras}]'\n"
+            f"(bản cài trần vốn đã có sẵn — nếu vẫn thiếu thì môi trường đang "
+            f"lỡ gỡ mất gói này)"
+        ) from e
+
+
 def build_llm(provider: str = "google", model: Optional[str] = None,
               temperature: float = 0.0, api_key: Optional[str] = None,
               role: str = "executor"):
@@ -92,11 +114,13 @@ def build_llm(provider: str = "google", model: Optional[str] = None,
     key = resolve_api_key(provider, api_key)
 
     if provider == "google":
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        with _goi_y_cai_dat("google", "langchain-google-genai"):
+            from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(model=model, temperature=temperature,
                                       google_api_key=key)
     if provider == "openai":
-        from langchain_openai import ChatOpenAI
+        with _goi_y_cai_dat("openai", "langchain-openai"):
+            from langchain_openai import ChatOpenAI
         return ChatOpenAI(model_name=model, temperature=temperature, openai_api_key=key)
 
     raise ValueError(f"Provider chưa hỗ trợ: {provider!r} (hiện có: google, openai)")
