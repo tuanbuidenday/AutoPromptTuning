@@ -36,6 +36,28 @@ jobs:
       - name: Chạy test
         run: pytest prompt_tuning_framework/tests/ -q
 
+  # Phần thống kê là nền của MỌI con số trong báo cáo, mà lại do chính tác giả
+  # framework tự viết. Tự kiểm chứng công thức bằng chính công thức đó là vô giá
+  # trị: hiểu sai từ đầu thì cả hai lần đều sai giống hệt nhau. Job này đối chiếu
+  # với statsmodels — cài đặt độc lập, do người khác viết — và chạy mô phỏng kiểm
+  # tra tính chất thống kê (bao phủ 95%, báo động giả <= 5%).
+  doi-chieu-thong-ke:
+    name: Đối chiếu thống kê với statsmodels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Cài kèm extras [verify]
+        run: pip install -e "prompt_tuning_framework/[test,verify]"
+
+      - name: Đối chiếu + mô phỏng
+        run: pytest prompt_tuning_framework/tests/test_do_luong_dung_khong.py -v
+
   secrets-scan:
     name: Quét lộ khoá
     runs-on: ubuntu-latest

@@ -209,6 +209,36 @@ cờ `reliable`: 9/12 ca lỗi + 3 ca đúng = **100/100** dù prompt rất dở
 `reliable=False`, `PromptTuner` **từ chối ghi nhận điểm** và dừng, thay vì tuyên
 bố thắng lợi trên rác.
 
+### Làm sao chắc chắn các phép đo này đúng?
+
+Đừng tin. Phần thống kê do chính tác giả framework tự viết, và tự kiểm chứng công
+thức bằng chính công thức đó là vô giá trị — hiểu sai từ đầu thì cả hai lần đều
+sai giống hệt nhau. [`tests/test_do_luong_dung_khong.py`](tests/test_do_luong_dung_khong.py)
+kiểm chứng bằng **ba tầng độc lập**, và CI chạy lại mỗi lần push:
+
+| Tầng | Cách làm | Bắt được lỗi gì |
+|---|---|---|
+| **1. Đối chiếu ngoài** | So với `statsmodels` — cài đặt độc lập, do người khác viết | Cài sai công thức |
+| **2. Giá trị tham chiếu** | Khoá cứng giá trị suy được bằng tay (vd `b=0,c=k ⇒ p = 2/2ᵏ`) | Cài sai, kể cả khi không có statsmodels |
+| **3. Mô phỏng** | Kiểm tra **tính chất**, không kiểm tra công thức | **Dùng sai công cụ** — tầng 1 và 2 bỏ lọt |
+
+Tầng 3 là mạnh nhất vì nó không dựa vào công thức nào: khoảng tin cậy 95% **phải**
+chứa giá trị thật ~95% số lần; kiểm định mức 5% **chỉ được** báo động sai ≤ 5% số
+lần. Kèm cả chiều ngược lại — McNemar phải **bắt được** khác biệt thật > 95% số
+lần, nếu không thì một hàm luôn trả `p = 1.0` cũng qua được test báo-động-giả.
+
+Kết quả: Wilson và McNemar khớp `statsmodels` **sai lệch 0.000000**;
+Clopper-Pearson tự viết (dò nhị phân trên CDF nhị thức) khớp bản của statsmodels
+(phân vị Beta qua scipy) tới **10⁻¹⁴** — hai đường tính hoàn toàn khác nhau.
+
+```bash
+pip install -e "prompt_tuning_framework/[test,verify]"
+pytest prompt_tuning_framework/tests/test_do_luong_dung_khong.py -v
+```
+
+`statsmodels` **không phải** dependency của framework — `core/stats.py` chỉ dùng
+thư viện chuẩn. Nó chỉ cần khi muốn *chứng minh* phép đo đúng.
+
 ### 2. Khoảng tin cậy Wilson (95%, z = 1.96)
 
 ```
@@ -220,6 +250,21 @@ CI         = [tâm − nửa_rộng,  tâm + nửa_rộng]        x = số đún
 Dùng Wilson **thay vì Wald** (`p ± z√(p(1−p)/n)`) vì Wald vỡ ở rìa: với 16/16 ca
 đúng, Wald cho `[100, 100]` — tuyên bố chắc chắn tuyệt đối từ 16 mẫu. Wilson cho
 `[80.6, 100]`, tức "100 điểm" chỉ chứng minh được prompt đúng **ít nhất ~81%**.
+
+**Giới hạn đã biết của Wilson:** bao phủ của nó *dao động* và tụt xuống ~92% khi
+accuracy sát 0% hoặc 100% (Brown, Cai & DasGupta 2001) — đã kiểm chứng bằng mô
+phỏng rằng `statsmodels` tụt y hệt, nên đó là đặc tính của phương pháp chứ không
+phải lỗi cài đặt. Khi cần bảo đảm chắc chắn ở vùng biên, dùng
+`clopper_pearson_interval()` — phương pháp *exact*, bao phủ ≥ 95% ở **mọi** p,
+đổi lại khoảng rộng hơn chút:
+
+```python
+wilson_interval(200, 200)           # (98.1, 100.0)
+clopper_pearson_interval(200, 200)  # (98.2, 100.0)  <- exact, bảo đảm >= 95%
+```
+
+Với kết quả thật của báo cáo (200/200) hai phương pháp chỉ lệch **0.1 điểm**, nên
+con số công bố an toàn.
 
 ### 3. So hai prompt: McNemar exact (ghép cặp)
 

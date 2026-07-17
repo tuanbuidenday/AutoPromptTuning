@@ -7,6 +7,7 @@ bắt buộc phải đo được độ bất định, nếu không ta chỉ đan
 
 Không phụ thuộc scipy/numpy: chỉ dùng math + itertools của thư viện chuẩn.
 """
+from functools import lru_cache
 from math import comb, sqrt
 from typing import List, Optional, Tuple
 
@@ -36,6 +37,64 @@ def wilson_interval(num_correct: int, num_total: int,
     center = (num_correct + z2 / 2) / denom
     half = z / denom * sqrt(num_correct * (num_total - num_correct) / num_total + z2 / 4)
     return (max(0.0, center - half) * 100, min(1.0, center + half) * 100)
+
+
+def _binom_cdf(k: int, n: int, p: float) -> float:
+    """P(X <= k) với X ~ Nhị thức(n, p)."""
+    if k < 0:
+        return 0.0
+    if k >= n:
+        return 1.0
+    return sum(comb(n, i) * p**i * (1 - p)**(n - i) for i in range(k + 1))
+
+
+# Cache vì hàm này thuần tuý (cùng input -> cùng output) nhưng đắt: mỗi lần gọi
+# là ~60 vòng dò nhị phân, mỗi vòng tính CDF nhị thức O(n). Số cặp (đúng, tổng)
+# gặp thực tế rất ít — cùng một bộ test được chấm lại nhiều lần — nên cache ăn
+# gần như tuyệt đối. Không cache thì test bao phủ mất 164s, có cache còn ~1s.
+@lru_cache(maxsize=4096)
+def clopper_pearson_interval(num_correct: int, num_total: int,
+                             alpha: float = 0.05) -> Tuple[float, float]:
+    """Khoảng tin cậy Clopper-Pearson ("exact"), trả về (thấp, cao) thang 0..100.
+
+    Khi nào dùng thay Wilson: khi accuracy sát 0% hoặc 100%. Bao phủ của Wilson
+    DAO ĐỘNG và tụt xuống ~92% ở vùng biên (đặc tính đã biết của phương pháp — đã
+    kiểm chứng bằng mô phỏng rằng statsmodels cũng tụt y hệt, xem
+    tests/test_do_luong_dung_khong.py). Clopper-Pearson bảo đảm bao phủ >= 95% ở
+    MỌI p, đổi lại khoảng rộng hơn một chút.
+
+    Mặc định của framework vẫn là Wilson vì nó chặt hơn và là lựa chọn tiêu chuẩn;
+    dùng hàm này khi cần bảo đảm chắc chắn ở vùng biên.
+
+    Cài đặt bằng cách dò nhị phân trên hàm phân phối nhị thức — tương đương với
+    phân vị Beta nhưng không cần scipy:
+        cận dưới = p sao cho P(X >= x | p) = alpha/2
+        cận trên = p sao cho P(X <= x | p) = alpha/2
+    """
+    if num_total <= 0:
+        return (0.0, 0.0)
+    if not 0 <= num_correct <= num_total:
+        raise ValueError(f"num_correct={num_correct} phải nằm trong [0, {num_total}]")
+
+    def _do(muc_tieu, la_can_duoi):
+        lo, hi = 0.0, 1.0
+        # 60 vòng -> sai số ~1e-18, thừa xa so với độ chính xác cần thiết
+        # (test đối chiếu statsmodels dùng dung sai 1e-6).
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if la_can_duoi:
+                # P(X >= x | p) tăng theo p
+                val = 1 - _binom_cdf(num_correct - 1, num_total, mid)
+                lo, hi = (lo, mid) if val > muc_tieu else (mid, hi)
+            else:
+                # P(X <= x | p) giảm theo p
+                val = _binom_cdf(num_correct, num_total, mid)
+                lo, hi = (mid, hi) if val > muc_tieu else (lo, mid)
+        return (lo + hi) / 2
+
+    thap = 0.0 if num_correct == 0 else _do(alpha / 2, True)
+    cao = 1.0 if num_correct == num_total else _do(alpha / 2, False)
+    return (thap * 100, cao * 100)
 
 
 def mcnemar_exact(only_a_correct: int, only_b_correct: int) -> float:

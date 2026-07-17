@@ -34,8 +34,9 @@ from .core import (BaseCallback, BaseEvaluator, BaseExecutor, BaseOptimizer,
                    BasePromptStore, EvalResult, Prediction, PromptTuner,
                    PromptVersion, Sample, SampleResult, available, create,
                    get, register)
-from .core.stats import (mcnemar_exact, min_flips_for_significance,
-                         non_inferiority, wilson_interval)
+from .core.stats import (clopper_pearson_interval, mcnemar_exact,
+                         min_flips_for_significance, non_inferiority,
+                         wilson_interval)
 from .data import load_samples_csv, split_samples
 
 __version__ = "0.1.0"
@@ -54,7 +55,7 @@ __all__ = [
     # dữ liệu — split_samples để tách tập test giữ riêng, tránh điểm học thuộc
     "load_samples_csv", "split_samples",
     # đo lường: điểm trần không nói lên độ tin cậy, luôn kèm khoảng tin cậy
-    "wilson_interval", "mcnemar_exact", "non_inferiority",
-    "min_flips_for_significance",
+    "wilson_interval", "clopper_pearson_interval", "mcnemar_exact",
+    "non_inferiority", "min_flips_for_significance",
     "__version__",
 ]
