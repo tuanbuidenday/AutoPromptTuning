@@ -217,7 +217,9 @@ Trả lời thẳng, đừng giấu — người chấm thường đánh giá ca
 - **Bao phủ của Wilson tụt ~92% khi accuracy sát 100%** — đặc tính đã biết của
   phương pháp (đã kiểm chứng statsmodels tụt y hệt). Kết quả 200/200 vẫn an toàn
   vì Wilson `[98.1, 100]` gần trùng Clopper-Pearson `[98.2, 100]`.
-- **Chỉ thử trên bài phân loại 2 nhãn.** Framework không ràng buộc điều đó, nhưng
-  tôi chưa đo trên bài khác.
+- **Chỉ thử trên bài phân loại 2 nhãn.** Đã đo trên **hai miền khác nhau** —
+  ticket tiếng Anh (test 71.5 → 100.0) và phát hiện lộ PII tiếng Việt (test
+  66.7 → 100.0, p = 1.9 × 10⁻⁶) — nhưng cả hai đều là 2 nhãn. Framework không
+  ràng buộc điều đó, tôi chỉ chưa đo trên bài nhiều nhãn hay bài sinh văn bản.
 - **Muốn siết non-inferiority xuống margin 3 điểm thì cần hơn 400 ca test**, bộ
   hiện tại chỉ đủ cho 5 điểm.

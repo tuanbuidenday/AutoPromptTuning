@@ -256,12 +256,38 @@ Chạy thật với Gemini, train 60 / test 200:
 Engine của AutoPrompt chạy được, và prompt nó viết ra cũng tự tìm ra cả hai chiều
 bẫy giọng điệu lẫn chiều trả tiền.
 
-> ⚠️ **Đừng so 85.0 với 100.0 ở trên.** Hai lần chạy **khác điều kiện**:
-> `llm_rewrite` được 280 mẫu train và 4 vòng, `autoprompt` chỉ được 60 mẫu.
-> Chênh lệch có thể hoàn toàn do lượng dữ liệu chứ không phải do engine. Muốn
-> kết luận engine nào tốt hơn thì phải chạy lại cùng train/test/số vòng — bảng
-> này **không** chứng minh điều đó, và cũng không nhằm chứng minh. Nó chỉ trả lời
-> một câu hỏi: engine ngoài có cắm vào và chạy thật được không? Có.
+> ⚠️ **Đừng so 85.0 với 100.0 của `llm_rewrite` ở trên.** Hai lần chạy **khác
+> điều kiện**: `llm_rewrite` được 280 mẫu train và 4 vòng, `autoprompt` chỉ được
+> 60 mẫu. Chênh lệch có thể hoàn toàn do lượng dữ liệu chứ không phải do engine.
+> Muốn kết luận engine nào tốt hơn thì phải chạy lại cùng train/test/số vòng —
+> bảng này **không** chứng minh điều đó, và cũng không nhằm chứng minh. Nó chỉ
+> trả lời một câu hỏi: engine ngoài có cắm vào và chạy thật được không? Có.
+
+### Bài toán thứ hai: phát hiện lộ thông tin khách hàng (tiếng Việt)
+
+Cùng framework, đổi bộ mẫu + `task_description`, **không sửa dòng nào trong lõi**.
+Chạy `examples/pii_example.py`, 120 ca (60 train / 60 test):
+
+Prompt khởi đầu — kiểu người ta hay viết, không định nghĩa gì:
+
+```
+Dữ liệu đầu vào là nhạy cảm, lộ thông tin khách hàng, trả lời Yes or No
+```
+
+| | Train (60) | **Test (60, optimizer chưa từng thấy)** |
+|---|---|---|
+| Prompt gốc | 61.7 | **66.7** — CI 95% [54.1, 77.3] |
+| Prompt tối ưu | 100.0 | **100.0** — CI 95% [94.0, 100.0] |
+
+McNemar ghép cặp: **20 ca lật sai→đúng, 0 ca xấu đi, p = 1.9 × 10⁻⁶**.
+
+Điều đáng chú ý: prompt gốc chứa chữ *"nhạy cảm"*, mà bộ mẫu rải chữ đó **đều
+50/50** giữa Yes và No (`test_pii_dataset.py` khoá đúng con số này). Framework chỉ
+nhìn các ca sai, tự suy ra chữ đó vô nghĩa, rồi **viết thẳng vào prompt** rằng
+văn bản chỉ nhắc tới "bảo mật"/"nhạy cảm" mà không nêu dữ liệu cụ thể thì là No.
+
+CI ở đây rộng hơn bộ ticket ([94, 100] so với [98.1, 100]) vì chỉ có 60 ca test
+thay vì 200 — ít mẫu thì kết luận yếu hơn, không tránh được.
 
 ## Phương pháp đo lường được tính thế nào
 
