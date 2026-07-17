@@ -41,6 +41,16 @@ for k in ('store','executor','evaluator','optimizer'):
 Kết quả: `optimizer: ['autoprompt', 'llm_rewrite']` — `autoprompt` là **một phần
 tử trong danh sách**, không phải trung tâm.
 
+Và nó không chỉ *đăng ký* được, nó **chạy thật**: engine AutoPrompt cắm vào qua
+interface `BaseOptimizer` đạt **85.0/100 trên tập test, CI 95% [79.4, 89.3]**
+(train 60 / test 200) — xem README mục "Kết quả thật". Không sửa dòng nào trong
+lõi framework.
+
+Nếu bị hỏi *"sao 85.0 mà optimizer nhà được 100?"* — trả lời thẳng: **hai lần
+chạy khác điều kiện** (280 mẫu train so với 60), nên không so trực tiếp được, và
+tôi không dùng nó để nói engine nào hơn. Nó chỉ trả lời "engine ngoài cắm vào
+chạy được không".
+
 ---
 
 ## 3. Prompt tối ưu có thật sự tốt hơn, hay chỉ may mắn?
