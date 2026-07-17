@@ -175,6 +175,38 @@ available("optimizer")   # ['autoprompt', 'llm_rewrite']
 Một điểm accuracy trần là con số gây hiểu nhầm. Framework cung cấp sẵn các công
 cụ để đo cho đúng.
 
+### Bộ mẫu chuẩn — thiết kế để luật lười thất bại
+
+`examples/tickets.csv`: **400 ca, cân bằng 200 Yes / 200 No**, sinh bởi
+`examples/make_tickets.py` (seed cố định, tái tạo được).
+
+Quy định ẩn: **Yes ⟺ khách đang trả tiền VÀ bị chặn hoàn toàn.** Bộ mẫu theo
+thiết kế giai thừa *giọng điệu × trả tiền × bị chặn*, nên mọi dấu hiệu đơn lẻ đều
+không đủ:
+
+| Luật lười | Điểm đạt được |
+|---|---|
+| "gào URGENT!!! → Yes" (giọng điệu) | **49.8** — vô dụng |
+| "bình tĩnh → Yes" (giọng điệu) | **50.2** — vô dụng |
+| "khách trả tiền → Yes" | 76.8 — chưa đủ |
+| "bị chặn → Yes" | 78.0 — chưa đủ |
+
+Ticket gào to rải đều cả Yes lẫn No (`P(Yes | gào to) = 49.8%`). Điều này quan
+trọng: nếu chỉ ticket No mới gào to thì model chỉ cần học "gào to → No", và
+benchmark sẽ đo **giọng điệu** thay vì đo quy định. `tests/test_bo_mau.py` canh
+giữ toàn bộ các tính chất này.
+
+Cỡ 400 không tuỳ tiện — nó là cỡ nhỏ nhất đủ cho mục tiêu "rút ngắn prompt mà
+accuracy không tụt quá 5 điểm":
+
+| Cỡ tập test | Khoảng tin cậy (ở 90%) | Kết luận non-inferiority 5đ? |
+|---|---|---|
+| 16 | ±16.3 | chưa đủ |
+| 48 | ±8.8 | chưa đủ |
+| **200** | **±4.2** | **được** |
+
+Sinh lại: `python -m prompt_tuning_framework.examples.make_tickets`
+
 ### Tách tập test — bắt buộc nếu muốn con số có nghĩa
 
 Optimizer được xem các ca **sai** để viết lại prompt. Nếu chấm điểm trên chính
