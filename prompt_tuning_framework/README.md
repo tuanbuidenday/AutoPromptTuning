@@ -10,10 +10,29 @@ bạn chỉ cắm component vào 4 điểm mở rộng.
 
 ## Cài đặt
 
+Cần Python >= 3.10. Chỉ dùng framework, không cần sửa code:
+
 ```bash
+pip install "prompt-tuning-framework[google] @ git+https://github.com/tuanbuidenday/AutoPromptTuning.git#subdirectory=prompt_tuning_framework"
+```
+
+Extras phải đứng trước dấu `@` theo PEP 508. Viết `...#subdirectory=prompt_tuning_framework[google]`
+thì pip coi `[google]` là một phần của tên thư mục và lặng lẽ bỏ qua extras.
+
+Muốn đọc/sửa code hoặc chạy test thì clone về:
+
+```bash
+git clone https://github.com/tuanbuidenday/AutoPromptTuning.git
+cd AutoPromptTuning
 pip install -e "prompt_tuning_framework/[google]"   # Google Gemini
 pip install -e "prompt_tuning_framework/[openai]"   # OpenAI
 pip install -e "prompt_tuning_framework/[all]"      # tất cả + AutoPrompt + test
+```
+
+Cài xong kiểm tra ngay, chưa cần API key:
+
+```bash
+prompt-tune plugins
 ```
 
 ## Gắn API key
@@ -98,7 +117,7 @@ pip install -e "prompt_tuning_framework/[test]"
 python -m pytest prompt_tuning_framework/tests/ -q
 ```
 
-89 test, chạy offline, không cần API key.
+188 test, chạy offline, không cần API key.
 
 ## UI demo
 
@@ -480,7 +499,7 @@ prompt_tuning_framework/
 ├── config.py           YAML → tự dựng component
 ├── cli.py              Lệnh `prompt-tune`
 ├── ui/                 UI demo Streamlit (một consumer của framework)
-├── tests/              89 test, chạy offline
+├── tests/              188 test, chạy offline
 └── examples/           quickstart.py, hard_example.py, custom_components.py
 ```
 
