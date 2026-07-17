@@ -12,13 +12,20 @@ mắc đúng lỗi này — 15/15 ticket gào "URGENT!!!" đều là No, nên "g
 luật đúng 100% trong nhóm đó, dù nó chẳng liên quan gì tới quy định thật.
 
 Thiết kế 2×2×2 (giọng điệu × trả tiền × bị chặn) để mỗi dấu hiệu ĐƠN LẺ đều
-không đủ kết luận:
+không đủ kết luận. Mỗi ô chia đôi gào/bình tĩnh:
 
-    trả tiền + bị chặn + gào     -> Yes   (100)
-    trả tiền + bị chặn + bình tĩnh -> Yes (100)
-    trả tiền + KHÔNG chặn        -> No    ( 67)
-    free     + bị chặn           -> No    ( 67)
-    free     + KHÔNG chặn        -> No    ( 66)
+    trả tiền + bị chặn        -> Yes   (240)
+    trả tiền + KHÔNG chặn     -> No    ( 80)
+    free     + bị chặn        -> No    ( 80)   <- ca then chốt
+    free     + KHÔNG chặn     -> No    ( 80)
+
+Tổng 480 ca: 240 Yes / 240 No, và 240 gào / 240 bình tĩnh.
+
+Vì sao 480 chứ không phải 400: tách 280 train / 200 test. Cần đúng 200 ca test
+mới đủ kết luận "rút ngắn prompt mà accuracy không tụt quá 5 điểm" — 120 ca chỉ
+kết luận được ở mức 7 điểm. Phần train dư ra không giúp optimizer thông minh hơn
+(nó chỉ đọc max_errors=5 ca sai mỗi vòng) nhưng làm điểm dev ổn định hơn và cho
+nó một rổ lỗi đa dạng hơn để chọn.
 
 Hệ quả (test_bo_mau.py canh giữ):
     - giọng điệu: P(Yes | gào) ≈ P(Yes | bình tĩnh) ≈ 50%  -> vô dụng để đoán
@@ -161,20 +168,20 @@ def build():
     rows = []
 
     # Yes: trả tiền VÀ bị chặn — một nửa gào, một nửa bình tĩnh
-    for gao, n in ((True, 100), (False, 100)):
-        rows += [(t, "Yes") for t in _sinh(rng, PAYING, BLOCKED, gao, n)]
+    for gao in (True, False):
+        rows += [(t, "Yes") for t in _sinh(rng, PAYING, BLOCKED, gao, 120)]
 
     # No: trả tiền nhưng KHÔNG bị chặn
-    for gao, n in ((True, 34), (False, 33)):
-        rows += [(t, "No") for t in _sinh(rng, PAYING, NOT_BLOCKED, gao, n)]
+    for gao in (True, False):
+        rows += [(t, "No") for t in _sinh(rng, PAYING, NOT_BLOCKED, gao, 40)]
 
     # No: bị chặn hoàn toàn nhưng KHÔNG trả tiền (ca then chốt)
-    for gao, n in ((True, 34), (False, 33)):
-        rows += [(t, "No") for t in _sinh(rng, FREE, BLOCKED, gao, n)]
+    for gao in (True, False):
+        rows += [(t, "No") for t in _sinh(rng, FREE, BLOCKED, gao, 40)]
 
     # No: không trả tiền, cũng không bị chặn
-    for gao, n in ((True, 33), (False, 33)):
-        rows += [(t, "No") for t in _sinh(rng, FREE, NOT_BLOCKED, gao, n)]
+    for gao in (True, False):
+        rows += [(t, "No") for t in _sinh(rng, FREE, NOT_BLOCKED, gao, 40)]
 
     rng.shuffle(rows)
 

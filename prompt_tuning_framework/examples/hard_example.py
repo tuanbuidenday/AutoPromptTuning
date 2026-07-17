@@ -10,19 +10,22 @@ Quy định thật (KHÔNG hề nói cho model biết):
     No  = mọi thứ khác: lỗi giao diện, đòi tính năng, câu hỏi, có cách né,
           user free — dù ticket có gào to đến đâu.
 
-Bộ mẫu (examples/tickets.csv, sinh bởi make_tickets.py): 400 ca, cân bằng 200 Yes
-/ 200 No, thiết kế giai thừa giọng-điệu × trả-tiền × bị-chặn để mọi LUẬT LƯỜI đều
-thất bại — giọng điệu chỉ đạt ~50 điểm (vô dụng), mỗi dấu hiệu đơn lẻ ~77 điểm.
-Chỉ hiểu đúng sự KẾT HỢP mới ăn điểm cao. test_bo_mau.py canh giữ điều này.
+Bộ mẫu (examples/tickets.csv, sinh bởi make_tickets.py): 480 ca, cân bằng 240 Yes
+/ 240 No, chia 280 train / 200 test. Thiết kế giai thừa giọng-điệu × trả-tiền ×
+bị-chặn để mọi LUẬT LƯỜI đều thất bại — giọng điệu chỉ đạt 50 điểm (bằng tung
+đồng xu), mỗi dấu hiệu đơn lẻ 83.3 điểm. Chỉ hiểu đúng sự KẾT HỢP mới đạt 100.
+test_bo_mau.py canh giữ điều này.
 
-Ví dụ này TÁCH dev/test. Optimizer chỉ nhìn thấy tập dev; điểm công bố lấy từ tập
-test mà nó chưa từng thấy. Không tách thì 100/100 chỉ là điểm học thuộc: optimizer
-được xem đúng các ca sai rồi viết prompt vá chúng.
+Ví dụ này TÁCH train/test. Optimizer chỉ nhìn thấy tập train; điểm công bố lấy từ
+tập test mà nó chưa từng thấy. Không tách thì điểm cao chỉ là điểm học thuộc:
+optimizer được xem đúng các ca sai rồi viết prompt vá chúng. Đã kiểm chứng bằng
+LLM thật: một lần chạy cho train 83.3 nhưng test chỉ 66.7 — chênh 16.6 điểm.
 
-CHI PHÍ — đọc kỹ trước khi chạy: mỗi vòng gọi LLM một lần cho MỖI ca dev (200 ca),
-cộng 200 lần chấm tập test ở cuối. Chạy đủ 4 vòng là ~1000 request. Free tier có
-giới hạn theo NGÀY nên chắc chắn cạn quota giữa chừng — và ca lỗi sẽ bị loại khỏi
-mẫu số, làm điểm bị thổi phồng (cờ reliable sẽ chặn, nhưng bạn mất thời gian).
+CHI PHÍ — đọc kỹ trước khi chạy: mỗi vòng gọi LLM một lần cho MỖI ca train (280
+ca), cộng 200 lần chấm tập test ở cuối. Chạy đủ 4 vòng là ~1.320 request, khoảng
+1.300 VND trên gói trả phí. Free tier chỉ cho 20 request/NGÀY/model (tính theo
+PROJECT, không theo key) nên chắc chắn cạn quota giữa chừng — ca lỗi sẽ bị loại
+khỏi mẫu số làm điểm bị thổi phồng (cờ reliable sẽ chặn, nhưng bạn mất thời gian).
 Dùng --nho để chạy thử trên bộ nhỏ trước.
 
 Chạy:  ./venv/bin/python -m prompt_tuning_framework.examples.hard_example
@@ -41,6 +44,11 @@ logging.basicConfig(level=logging.WARNING, format="%(message)s")
 
 LABELS = ["Yes", "No"]
 DATASET = Path(__file__).parent / "tickets.csv"
+
+# Bộ 480 ca chia 280 train / 200 test. Con số 200 không tuỳ tiện: đó là cỡ nhỏ
+# nhất mà non_inferiority(margin_pp=5) còn kết luận được. Với 120 ca thì chỉ kết
+# luận nổi ở mức 7 điểm.
+N_TEST = 200
 
 TASK = ("Classify whether a customer support ticket must be escalated as urgent. "
         "Answer Yes if it is urgent, No if it is not.")
@@ -63,8 +71,14 @@ def main(max_iters: int = 4, n_mau: Optional[int] = None):
         samples = yes + no
 
     # seed cố định -> chia lại y hệt, để so sánh giữa các lần chạy là công bằng.
-    dev, test = split_samples(samples, test_ratio=0.5, seed=0)
-    print(f"Bộ mẫu: {len(samples)} ca  ->  dev {len(dev)} / test {len(test)} "
+    # Đúng 200 ca test là con số có chủ đích: dưới mức đó thì khoảng tin cậy quá
+    # rộng để kết luận "prompt mới không tệ hơn 5 điểm" (120 ca chỉ đủ cho 7 điểm).
+    if n_mau is not None:
+        dev, test = split_samples(samples, test_ratio=0.5, seed=0)
+    else:
+        dev, test = split_samples(samples, test_size=N_TEST, seed=0)
+
+    print(f"Bộ mẫu: {len(samples)} ca  ->  train {len(dev)} / test {len(test)} "
           f"(test được giữ riêng, optimizer không thấy)")
     print(f"Ước tính: ~{len(dev) * max_iters + len(test)} request LLM")
 
@@ -104,9 +118,19 @@ def main(max_iters: int = 4, n_mau: Optional[int] = None):
         canh = "" if md.get("test_reliable") else "   <-- KHÔNG ĐÁNG TIN"
         print(f"Tập TEST (chưa từng thấy)    : {md['test_score']}/100{canh}")
         print(f"  khoảng tin cậy 95%         : [{lo}, {hi}] trên {md['test_num_scored']} ca")
+
         print("\nCon số đáng công bố là điểm TEST, không phải điểm DEV.")
-        print("Và phải công bố kèm khoảng tin cậy: điểm trần tạo cảm giác chắc chắn")
-        print("không có thật — trên bộ mẫu cỡ này, sai số vẫn còn khá rộng.")
+        # Nhận xét phải bám số thật, đừng cảnh báo "sai số rộng" khi nó đang hẹp.
+        sai_so = (hi - lo) / 2
+        if sai_so > 8:
+            print(f"Sai số ±{sai_so:.1f} điểm là RẤT RỘNG — bộ test {md['test_num_scored']} ca")
+            print("quá nhỏ để kết luận. Điểm trần đang tạo cảm giác chắc chắn không có thật.")
+        elif sai_so > 4.5:
+            print(f"Sai số ±{sai_so:.1f} điểm: đủ thấy khác biệt lớn, chưa đủ để chứng minh")
+            print("hai prompt tương đương trong khoảng 5 điểm.")
+        else:
+            print(f"Sai số ±{sai_so:.1f} điểm — đủ hẹp để kết luận, kể cả cho câu hỏi")
+            print("'prompt ngắn hơn có tệ hơn quá 5 điểm không'.")
     print("=" * 70)
 
 

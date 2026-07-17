@@ -61,6 +61,33 @@ def test_split_tham_so_sai():
         split_samples(_mau(4, 2), test_ratio=1)
 
 
+# ---------- test_size: chỉ định thẳng số ca ------------------------------
+def test_split_theo_test_size():
+    """Ghi thẳng số ca rõ ràng và ít sai hơn là tự tính tỉ lệ rồi hy vọng làm tròn đúng."""
+    dev, test = split_samples(_mau(480, 240), test_size=200, seed=0)
+    assert len(test) == 200
+    assert len(dev) == 280
+
+
+def test_test_size_de_len_test_ratio():
+    dev, test = split_samples(_mau(100, 50), test_ratio=0.9, test_size=20, seed=0)
+    assert len(test) == 20
+
+
+def test_test_size_van_giu_can_bang_nhan():
+    _, test = split_samples(_mau(480, 240), test_size=200, seed=0)
+    assert sum(1 for s in test if s.label == "Yes") == 100
+
+
+def test_test_size_sai():
+    with pytest.raises(ValueError):
+        split_samples(_mau(10, 5), test_size=0)
+    with pytest.raises(ValueError):
+        split_samples(_mau(10, 5), test_size=10)   # không được lấy sạch
+    with pytest.raises(ValueError):
+        split_samples(_mau(10, 5), test_size=11)
+
+
 def test_split_chap_nhan_mau_khong_co_nhan():
     mau = [Sample(id=i, text=f"t{i}") for i in range(10)]
     dev, test = split_samples(mau, test_ratio=0.5, seed=0)

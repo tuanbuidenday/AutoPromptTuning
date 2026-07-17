@@ -34,8 +34,13 @@ def _khop(text: str, pool) -> bool:
 
 
 # ---------- kích thước & cân bằng ---------------------------------------
-def test_du_400_mau(mau):
-    assert len(mau) == 400
+def test_du_480_mau(mau):
+    """480 = 280 train + 200 test.
+
+    200 ca test là cỡ nhỏ nhất còn kết luận được "prompt mới không tệ hơn 5
+    điểm"; 120 ca chỉ đủ cho mức 7 điểm.
+    """
+    assert len(mau) == 480
 
 
 def test_can_bang_nhan(mau):
@@ -44,8 +49,21 @@ def test_can_bang_nhan(mau):
     25/75 -> prompt luôn trả 'No' được 75 điểm mà không hiểu gì.
     """
     n_yes = sum(1 for s in mau if s.label == "Yes")
-    assert n_yes == 200
-    assert len(mau) - n_yes == 200
+    assert n_yes == 240
+    assert len(mau) - n_yes == 240
+
+
+def test_tach_ra_dung_280_200(mau):
+    """Cách chia dùng trong hard_example phải ra đúng 280/200, cân bằng nhãn."""
+    from prompt_tuning_framework import non_inferiority, split_samples
+
+    dev, test = split_samples(mau, test_size=200, seed=0)
+    assert len(dev) == 280 and len(test) == 200
+    assert sum(1 for s in test if s.label == "Yes") == 100
+    assert sum(1 for s in dev if s.label == "Yes") == 140
+    assert not ({s.text for s in dev} & {s.text for s in test})
+    # Lý do tồn tại của con số 200: dưới mức này thì mục tiêu không kết luận nổi.
+    assert non_inferiority(180, 180, len(test), margin_pp=5.0) is True
 
 
 def test_khong_trung_lap(mau):

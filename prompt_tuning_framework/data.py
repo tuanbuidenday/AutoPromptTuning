@@ -43,7 +43,8 @@ def load_samples_csv(path: str, text_col: str = "text",
 
 def split_samples(samples: List[Sample], test_ratio: float = 0.5,
                   seed: Optional[int] = 0,
-                  stratify: bool = True) -> Tuple[List[Sample], List[Sample]]:
+                  stratify: bool = True,
+                  test_size: Optional[int] = None) -> Tuple[List[Sample], List[Sample]]:
     """Chia bộ mẫu thành (dev, test).
 
     Vì sao bắt buộc phải chia: optimizer được xem các ca SAI để viết lại prompt.
@@ -52,6 +53,10 @@ def split_samples(samples: List[Sample], test_ratio: float = 0.5,
     mới. Tập test phải được giữ riêng, optimizer không bao giờ nhìn thấy.
 
     :param test_ratio: tỉ lệ dành cho tập test
+    :param test_size: chỉ định THẲNG số ca test; nếu truyền thì bỏ qua test_ratio.
+        Nên dùng cái này khi cỡ tập test là con số có chủ đích — vd cần đúng 200
+        ca mới đủ lực kết luận "không tệ hơn 5 điểm". Ghi 200 rõ ràng hơn và ít
+        sai hơn là ghi test_ratio=0.4167 rồi hy vọng nó làm tròn đúng.
     :param seed: cố định để chia lại y hệt; None = ngẫu nhiên mỗi lần
     :param stratify: giữ tỉ lệ nhãn ở hai tập bằng nhau. Cần thiết với bộ mẫu
         nhỏ và lệch nhãn — chia ngẫu nhiên thuần có thể dồn gần hết nhãn hiếm
@@ -59,7 +64,13 @@ def split_samples(samples: List[Sample], test_ratio: float = 0.5,
     """
     if not samples:
         raise ValueError("Không có mẫu nào để chia.")
-    if not 0 < test_ratio < 1:
+
+    if test_size is not None:
+        if not 0 < test_size < len(samples):
+            raise ValueError(
+                f"test_size phải nằm trong (0, {len(samples)}), nhận {test_size}")
+        test_ratio = test_size / len(samples)
+    elif not 0 < test_ratio < 1:
         raise ValueError(f"test_ratio phải nằm trong (0, 1), nhận {test_ratio}")
 
     rng = random.Random(seed)
