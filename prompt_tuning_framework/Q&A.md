@@ -6,6 +6,17 @@ ngay tại chỗ. Không cần tin lời mình, cứ chạy thử.
 Các lệnh chạy từ thư mục gốc repo. Trừ mục 10, tất cả đều không gọi LLM nên không
 tốn tiền và xong trong vài giây.
 
+Vài từ sẽ gặp suốt tài liệu:
+
+| Từ | Nghĩa |
+|---|---|
+| **Ca** | Một dòng dữ liệu: một đoạn văn bản kèm đáp án đúng của nó |
+| **Ca lật** | Ca mà prompt cũ trả lời sai còn prompt mới trả lời đúng |
+| **Điểm trần** | Điểm kịch khung, tức 100/100 — không thể cao hơn |
+| **Luật lười** | Mẹo đoán tắt, kiểu "thấy chữ URGENT thì trả lời Yes" |
+| **Tập train** | Phần dữ liệu cho optimizer xem để nó sửa prompt |
+| **Tập test** | Phần dữ liệu giữ riêng, optimizer không bao giờ được nhìn |
+
 ---
 
 ## 1. Đây là framework hay chỉ là một ứng dụng?
@@ -85,9 +96,13 @@ cùng một bộ mẫu. Ca nào cả hai cùng đúng thì không giúp phân bi
 
 ## 4. Điểm 100/100 có đáng tin không?
 
-Điểm trần luôn dễ gây hiểu nhầm, nên mình không bao giờ báo nó trần trụi. Trên
-200 ca, 100 điểm cho khoảng [98.1, 100.0], nghĩa là chỉ chứng minh được prompt
-đúng ít nhất 98.1%. Cũng 100 điểm đó mà chỉ có 16 ca thì tụt xuống còn ≥ 80.6%.
+Nghĩ thế này cho dễ. Bạn nếm cam trong vườn, nếm 16 quả đều ngọt. Dám nói cả vườn
+ngọt không? Không, vì 16 quả là quá ít. Bạn chỉ dám nói "ít nhất khoảng 81% là
+ngọt". Nếm 200 quả đều ngọt thì mới dám nói "ít nhất 98%".
+
+Điểm số cũng vậy, nên mình không bao giờ báo nó trần trụi mà luôn kèm khoảng tin
+cậy. Trên 200 ca, 100 điểm cho khoảng [98.1, 100.0], tức chỉ chứng minh được
+prompt đúng ít nhất 98.1%. Cũng 100 điểm đó mà chỉ có 16 ca thì tụt xuống ≥ 80.6%.
 
 ```bash
 python -c "
