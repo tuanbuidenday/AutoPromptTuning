@@ -8,7 +8,19 @@ from langchain_openai.chat_models import AzureChatOpenAI
 from langchain.chains import LLMChain
 import logging
 
-LLM_ENV = yaml.safe_load(open('config/llm_env.yml', 'r'))
+_CONFIG_DIR = Path(__file__).resolve().parent.parent / 'config'
+
+# config/llm_env.yml nằm trong Git nhưng chỉ là template toàn giá trị rỗng.
+# Khoá THẬT để ở config/llm_env.local.yml (đã .gitignore) và được nạp đè lên đây,
+# nên không có khoá nào lọt vào repo. Chỉ đè các giá trị khác rỗng.
+# Neo theo đường dẫn file thay vì CWD: plugin AutoPromptOptimizer import module
+# này từ thư mục bất kỳ, dùng đường dẫn tương đối sẽ vỡ.
+LLM_ENV = yaml.safe_load(open(_CONFIG_DIR / 'llm_env.yml', 'r'))
+_llm_env_local = _CONFIG_DIR / 'llm_env.local.yml'
+if _llm_env_local.is_file():
+    for _provider, _values in (yaml.safe_load(open(_llm_env_local, 'r')) or {}).items():
+        LLM_ENV.setdefault(_provider, {}).update(
+            {k: v for k, v in (_values or {}).items() if v})
 
 
 class Color:

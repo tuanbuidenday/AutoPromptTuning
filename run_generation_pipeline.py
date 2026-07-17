@@ -48,6 +48,15 @@ if (ranker_pipeline.cur_prompt is None) or (ranker_pipeline.task_description is 
     ranker_pipeline.cur_prompt = ranker_mod_prompt
     ranker_pipeline.task_description = ranker_mod_task_desc
 
+# For an LLM ranker-annotator with no explicit instruction, use the modified ranking task
+# description as the ground-truth instruction so the ranker can be trained without Argilla.
+if ranker_config_params.annotator.method == 'llm' and not ranker_pipeline.annotator.cur_instruct:
+    labels = ranker_config_params.dataset.label_schema
+    ranker_pipeline.annotator.cur_instruct = (
+        f"{ranker_pipeline.task_description} Rate the quality with exactly one of the "
+        f"following scores: {', '.join(labels)}."
+    )
+
 best_prompt = ranker_pipeline.run_pipeline(opt.num_ranker_steps)
 generation_config_params.eval.function_params = ranker_config_params.predictor.config
 generation_config_params.eval.function_params.instruction = best_prompt['prompt']

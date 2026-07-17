@@ -37,6 +37,16 @@ if opt.prompt == '':
 else:
     initial_prompt = opt.prompt
 
+# For an LLM annotator with no explicit instruction, use the task description as the
+# ground-truth annotation instruction so any entered prompt can be optimized without
+# manual labels or an Argilla server.
+if config_params.annotator.method == 'llm' and not config_params.annotator.config.get('instruction'):
+    labels = config_params.dataset.label_schema
+    config_params.annotator.config.instruction = (
+        f"{task_description} Answer with exactly one of the following labels: "
+        f"{', '.join(labels)}."
+    )
+
 # Initializing the pipeline
 pipeline = OptimizationPipeline(config_params, task_description, initial_prompt, output_path=opt.output_dump)
 if (opt.load_path != ''):

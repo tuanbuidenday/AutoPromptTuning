@@ -11,9 +11,9 @@ predictor:
         prompt: 'prompts/predictor_completion/prediction_generation.prompt'
         mini_batch_size: 1
         llm:
-            type: 'OpenAI'
-            name: 'gpt-4-1106-preview' #'gpt-3.5-turbo-1106'
-        num_workers: 7
+            type: 'google'
+            name: 'gemini-3.1-flash-lite'
+        num_workers: 1
 
 meta_prompts:
     folder: 'prompts/meta_prompts_generation'

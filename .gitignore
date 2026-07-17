@@ -5,3 +5,20 @@ __pycache__/
 .idea/
 dump/
 
+# ---- Khoá API / bí mật — TUYỆT ĐỐI không commit ----
+# config/llm_env.yml VẪN nằm trong Git (bản template toàn giá trị rỗng), vì
+# utils/config.py mở nó vô điều kiện lúc import -> xoá đi là clone mới crash.
+# Khoá THẬT để ở file .local dưới đây, và file đó không bao giờ vào Git.
+config/llm_env.local.yml
+.env
+.env.*
+!.env.example
+
+# ---- Sinh ra khi chạy ----
+*.db
+prompt_versions.db
+.DS_Store
+.pytest_cache/
+*.egg-info/
+build/
+dist/
