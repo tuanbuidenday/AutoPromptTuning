@@ -59,6 +59,10 @@ class PromptTuner:
         self.patience = patience
         self.min_delta = min_delta
         self.callbacks = callbacks or []
+        # Giữ nguyên EvalResult của tập test, không chỉ mỗi điểm: so sánh ghép cặp
+        # (McNemar) cần kết quả TỪNG CA. Chỉ lưu điểm thì muốn so hai prompt lại
+        # phải gọi LLM chấm lại toàn bộ tập test — tốn tiền vô ích.
+        self.test_result: Optional[EvalResult] = None
 
     # ---- hook helpers -------------------------------------------------
     def _fire(self, event: str, *args) -> None:
@@ -167,6 +171,7 @@ class PromptTuner:
         """
         predictions = self.executor.execute(best.text, test_samples)
         result = self.evaluator.evaluate(best.text, predictions, test_samples)
+        self.test_result = result
 
         lo, hi = result.confidence_interval
         best.metadata.update({

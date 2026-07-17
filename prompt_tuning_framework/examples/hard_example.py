@@ -57,9 +57,15 @@ TASK = ("Classify whether a customer support ticket must be escalated as urgent.
 BAD_PROMPT = "Is this support ticket urgent? Yes or No"
 
 
-def main(max_iters: int = 4, n_mau: Optional[int] = None):
+def main(max_iters: int = 4, n_mau: Optional[int] = None,
+         delay: float = 5.0, num_workers: int = 1):
     """:param n_mau: chỉ lấy ngần này ca (cân bằng nhãn) để chạy thử cho rẻ.
-        None = dùng cả 400 ca, tốn ~1000 request cho 4 vòng.
+        None = dùng cả 480 ca, tốn ~1.320 request cho 4 vòng.
+    :param delay: nghỉ bao nhiêu giây giữa 2 lần gọi. Mặc định 5.0 cho free tier
+        (15 request/phút). Gói TRẢ PHÍ có RPM cao hơn nhiều -> để 0 và tăng
+        num_workers, nếu không 1.320 lượt sẽ mất gần 2 tiếng.
+    :param num_workers: số luồng song song. Chỉ tăng khi đã bật billing — bị rate
+        limit sẽ làm ca lỗi, mà ca lỗi bị loại khỏi mẫu số nên điểm bị thổi phồng.
     """
     samples = load_samples_csv(str(DATASET))
 
@@ -83,9 +89,11 @@ def main(max_iters: int = 4, n_mau: Optional[int] = None):
     print(f"Ước tính: ~{len(dev) * max_iters + len(test)} request LLM")
 
     tuner = PromptTuner(
-        # delay=5.0: free tier Gemini chỉ cho 15 request/phút. Không tiết chế thì
-        # ca lỗi 429 sẽ bị loại khỏi mẫu số -> điểm bị thổi phồng thành 100 giả.
-        executor=LLMExecutor(labels=LABELS, delay=5.0),  # model rẻ — vai "thí sinh"
+        # delay/num_workers: free tier Gemini chỉ cho 15 request/phút. Không tiết
+        # chế thì ca lỗi 429 sẽ bị loại khỏi mẫu số -> điểm bị thổi phồng thành
+        # 100 giả. Đã bật billing thì để delay=0 và tăng num_workers.
+        executor=LLMExecutor(labels=LABELS, delay=delay,   # model rẻ — vai "thí sinh"
+                             num_workers=num_workers),
         evaluator=AccuracyEvaluator(),
         optimizer=LLMRewriteOptimizer(labels=LABELS),    # model mạnh — vai "người sửa prompt"
         task_description=TASK,
@@ -139,5 +147,9 @@ if __name__ == "__main__":
     ap.add_argument("--nho", type=int, default=None, metavar="N",
                     help="chỉ dùng N ca (cân bằng nhãn) cho rẻ, vd --nho 24")
     ap.add_argument("--max-iters", type=int, default=4)
+    ap.add_argument("--delay", type=float, default=5.0,
+                    help="giây nghỉ giữa 2 lần gọi (0 nếu đã bật billing)")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="số luồng song song (chỉ tăng khi đã bật billing)")
     a = ap.parse_args()
-    main(max_iters=a.max_iters, n_mau=a.nho)
+    main(max_iters=a.max_iters, n_mau=a.nho, delay=a.delay, num_workers=a.workers)

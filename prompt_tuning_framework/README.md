@@ -170,6 +170,28 @@ available("optimizer")   # ['autoprompt', 'llm_rewrite']
    ④ BaseOptimizer   ──┘   optimizer.propose(errors)       → Tối ưu hóa
 ```
 
+## Kết quả thật
+
+Chạy `examples/hard_example.py` với Gemini thật, bộ 480 ca (280 train / 200 test),
+4 vòng, 1.320 lượt gọi, chấm đủ 200/200 không lỗi:
+
+| | Train (280) | **Test (200, optimizer chưa từng thấy)** |
+|---|---|---|
+| Prompt gốc | 68.9 | **71.5** — CI 95% [64.9, 77.3] |
+| Prompt tối ưu | 100.0 | **100.0** — CI 95% [98.1, 100.0] |
+
+Kiểm định ghép cặp McNemar trên tập test: **57 ca lật sai→đúng, 0 ca xấu đi,
+p = 1.4 × 10⁻¹⁷**. Train 100 = test 100 → không học thuộc.
+
+Framework tự suy ra quy định ẩn (khách trả tiền **và** bị chặn hoàn toàn) chỉ từ
+các ca sai, và tự vô hiệu hoá bẫy giọng điệu theo **cả hai chiều** — prompt nó
+viết ra nói rõ rằng ticket gào "URGENT" vẫn có thể là No, *và* khách lịch sự viết
+"no rush" vẫn có thể là Yes.
+
+Chi phí: ~1.300 VND một lần chạy đầy đủ. Rẻ nhờ tách vai executor/optimizer —
+executor chạy 1.320 lượt nhưng dùng model rẻ và chỉ trả một từ, còn optimizer đắt
+gấp 6 lần trên mỗi token thì chỉ gọi 3 lượt.
+
 ## Đo lường hiệu quả prompt
 
 Một điểm accuracy trần là con số gây hiểu nhầm. Framework cung cấp sẵn các công

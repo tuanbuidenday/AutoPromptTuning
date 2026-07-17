@@ -145,6 +145,40 @@ def test_diem_tap_test_duoc_ghi_vao_metadata():
     assert best.metadata["test_ci_low"] < 100.0
 
 
+def test_giu_lai_ket_qua_tung_ca_cua_tap_test():
+    """Phải giữ cả EvalResult, không chỉ điểm.
+
+    So sánh ghép cặp (McNemar) cần kết quả TỪNG CA. Chỉ lưu điểm thì muốn so hai
+    prompt lại phải gọi LLM chấm lại toàn bộ tập test — tốn tiền vô ích.
+    """
+    from prompt_tuning_framework.components.evaluators import AccuracyEvaluator
+
+    dev = [Sample(id=i, text=f"It barks {i}", label="Yes") for i in range(4)]
+    test = [Sample(id=100 + i, text=f"It barks {i}", label="Yes") for i in range(4)]
+
+    tuner = PromptTuner(executor=FakeExecutor(always="Yes"),
+                        evaluator=AccuracyEvaluator(),
+                        optimizer=FakeOptimizer(), max_iters=1)
+    tuner.run("p", dev, test_samples=test)
+
+    assert tuner.test_result is not None
+    assert len(tuner.test_result.results) == 4
+    assert [r.sample.id for r in tuner.test_result.results] == [100, 101, 102, 103]
+    # Đủ dữ liệu để so cặp với một lần chạy khác trên cùng tập test.
+    assert tuner.test_result.distinguishable_from(tuner.test_result) is False
+
+
+def test_khong_truyen_tap_test_thi_test_result_van_la_none():
+    from prompt_tuning_framework.components.evaluators import AccuracyEvaluator
+
+    dev = [Sample(id=i, text=f"It barks {i}", label="Yes") for i in range(4)]
+    tuner = PromptTuner(executor=FakeExecutor(always="Yes"),
+                        evaluator=AccuracyEvaluator(),
+                        optimizer=FakeOptimizer(), max_iters=1)
+    tuner.run("p", dev)
+    assert tuner.test_result is None
+
+
 def test_khong_truyen_tap_test_thi_van_chay_nhu_cu():
     """Tương thích ngược: chữ ký cũ run(prompt, samples) phải còn dùng được."""
     from prompt_tuning_framework.components.evaluators import AccuracyEvaluator
